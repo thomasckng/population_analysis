@@ -16,7 +16,7 @@ sigma_M = 5
 true_param = [z_0, s_z, M_0, sigma_M]
 n_param = len(true_param)
 
-N = 5
+N = 10
 M = np.random.normal(M_0, sigma_M, N)
 z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
@@ -68,7 +68,7 @@ for i in range(n_param,n_dim):
 
 model = RQSpline(n_dim, 10, [128, 128], 8)
 
-step_size = 5e-2
+step_size = 5e-1
 local_sampler = MALA(log_likelihood, True, {"step_size": step_size})
 
 nf_sampler = Sampler(
