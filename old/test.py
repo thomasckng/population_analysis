@@ -49,7 +49,7 @@ prior_range = jnp.array([[0,5],[0,3],[0,100],[0,10],[0,10]])
 
 def prior(x):
     output = 0.
-    for i in range(4):
+    for i in range(n_param):
         output = jax.lax.cond(x[i]>=prior_range[i,0], lambda: output, lambda: -jnp.inf)
         output = jax.lax.cond(x[i]<=prior_range[i,1], lambda: output, lambda: -jnp.inf)
     for i in range(n_param,n_dim):
