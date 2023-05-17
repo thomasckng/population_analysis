@@ -15,11 +15,11 @@ M_0 = 50
 sigma_M = 5
 true_param = [z_0, s_z, M_0, sigma_M]
 
-M = np.random.normal(M_0, sigma_M, 10)
-z = np.random.normal(z_0, s_z, 10)
+N = 100
+M = np.random.normal(M_0, sigma_M, N)
+z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
 print(M.mean())
-N = len(M_z)
 
 def log_p_z(z, z_0, sigma_z):
     return -jnp.log(sigma_z)-0.5*jnp.log(2*np.pi)-0.5*((z-z_0)/sigma_z)**2
