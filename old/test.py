@@ -116,7 +116,7 @@ g = sns.pairplot(df, corner=True, kind='hist',
                  diag_kws=dict(common_norm=False, rasterized=True),
                  plot_kws=dict(common_norm=False))
 
-for i in range(n_dim):
+for i in range(4):
     g.axes[i,i].axvline(true_param[i], color=sns.color_palette()[3])
     for j in range(i):
         g.axes[i,j].axvline(true_param[j], color=sns.color_palette()[3])
