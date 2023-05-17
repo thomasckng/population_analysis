@@ -14,12 +14,13 @@ s_z = 0.3
 M_0 = 50
 sigma_M = 5
 true_param = [z_0, s_z, M_0, sigma_M]
+n_param = len(true_param)
 
 N = 100
 M = np.random.normal(M_0, sigma_M, N)
 z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
-print(M.mean())
+print("Mean of M: ", M.mean())
 
 def log_p_z(z, z_0, sigma_z):
     return -jnp.log(sigma_z)-0.5*jnp.log(2*np.pi)-0.5*((z-z_0)/sigma_z)**2
@@ -28,9 +29,9 @@ def log_p_M_z(M_z, z, M_0, sigma_M):
     return -jnp.log(sigma_M)-0.5*jnp.log(2*np.pi)-0.5*((M_z/(1+z)-M_0)/sigma_M)**2
 
 def log_likelihood(x):
-    return jnp.sum(log_p_M_z(M_z, x[4:], x[2], x[3]) + log_p_z(x[4:], x[0], x[1]))
+    return jnp.sum(log_p_M_z(M_z, x[n_param:], x[2], x[3]) + log_p_z(x[n_param:], x[0], x[1]))
 
-n_dim = 4+N
+n_dim = n_param+N
 n_chains = 1000
 n_loop_training = 20
 n_loop_production = 20
@@ -51,19 +52,19 @@ def prior(x):
     for i in range(4):
         output = jax.lax.cond(x[i]>=prior_range[i,0], lambda: output, lambda: -jnp.inf)
         output = jax.lax.cond(x[i]<=prior_range[i,1], lambda: output, lambda: -jnp.inf)
-    for i in range(4,n_dim):
-        output = jax.lax.cond(x[i]>=prior_range[4,0], lambda: output, lambda: -jnp.inf)
-        output = jax.lax.cond(x[i]<=prior_range[4,1], lambda: output, lambda: -jnp.inf)
+    for i in range(n_param,n_dim):
+        output = jax.lax.cond(x[i]>=prior_range[n_param,0], lambda: output, lambda: -jnp.inf)
+        output = jax.lax.cond(x[i]<=prior_range[n_param,1], lambda: output, lambda: -jnp.inf)
     return output
 
 def posterior(x):
     return log_likelihood(x) + prior(x)
 
 initial_position = jax.random.uniform(rng_key_set[0], shape=(int(n_chains), n_dim)) * 1
-for i in range(4):
+for i in range(n_param):
     initial_position = initial_position.at[:,i].set(initial_position[:,i]*(prior_range[i,1]-prior_range[i,0])+prior_range[i,0])
-for i in range(4,n_dim):
-    initial_position = initial_position.at[:,i].set(initial_position[:,i]*(prior_range[4,1]-prior_range[4,0])+prior_range[4,0])
+for i in range(n_param,n_dim):
+    initial_position = initial_position.at[:,i].set(initial_position[:,i]*(prior_range[n_param,1]-prior_range[n_param,0])+prior_range[n_param,0])
 
 model = RQSpline(n_dim, 10, [128, 128], 8)
 
@@ -105,7 +106,7 @@ samples_all = chains.reshape(-1,n_dim)
 labels = ['$z_0$', '$\sigma_z$', '$M_0$', '$\sigma_M$']
 
 df = pd.DataFrame()
-for i in range(4):
+for i in range(n_param):
     df[labels[i]] = samples_all[:,i]
 
 df = df.sample(n=10000)
@@ -116,7 +117,7 @@ g = sns.pairplot(df, corner=True, kind='hist',
                  diag_kws=dict(common_norm=False, rasterized=True),
                  plot_kws=dict(common_norm=False))
 
-for i in range(4):
+for i in range(n_param):
     g.axes[i,i].axvline(true_param[i], color=sns.color_palette()[3])
     for j in range(i):
         g.axes[i,j].axvline(true_param[j], color=sns.color_palette()[3])
