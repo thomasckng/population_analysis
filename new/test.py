@@ -28,7 +28,7 @@ def log_p_M_z(M_z, z, M_0, sigma_M):
 
 def log_likelihood(x):
     z = np.linspace(0, 20, 1000)
-    return np.log(np.trapz(np.exp(log_p_M_z(M_z, z, x[2], x[3]) + log_p_z(z, x[0], x[1])), z))
+    return jnp.log(jnp.trapz(jnp.exp(log_p_M_z(M_z, z, x[2], x[3]) + log_p_z(z, x[0], x[1])), z))
 
 n_dim = 4
 n_chains = 1000
