@@ -13,6 +13,7 @@ z_0 = 2
 s_z = 0.3
 M_0 = 50
 sigma_M = 5
+true_param = [z_0, s_z, M_0, sigma_M]
 
 M = np.random.normal(M_0, sigma_M, 10)
 z = np.random.normal(z_0, s_z, 10)
@@ -110,5 +111,11 @@ import seaborn as sns
 g = sns.pairplot(df, corner=True, kind='hist',
                  diag_kws=dict(common_norm=False, rasterized=True),
                  plot_kws=dict(common_norm=False))
+
+for i in range(n_dim):
+    g.axes[i,i].axvline(true_param[i], color=sns.color_palette()[3])
+    for j in range(i):
+        g.axes[i,j].axvline(true_param[j], color=sns.color_palette()[3])
+        g.axes[i,j].axhline(true_param[i], color=sns.color_palette()[3])
 
 g.figure.savefig('./corner.pdf')
