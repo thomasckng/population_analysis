@@ -68,7 +68,7 @@ for i in range(n_param,n_dim):
 
 model = RQSpline(n_dim, 10, [128, 128], 8)
 
-step_size = 5e-1
+step_size = 1e-1
 local_sampler = MALA(log_likelihood, True, {"step_size": step_size})
 
 nf_sampler = Sampler(
