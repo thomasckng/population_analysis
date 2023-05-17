@@ -16,7 +16,7 @@ sigma_M = 5
 true_param = [z_0, s_z, M_0, sigma_M]
 n_param = len(true_param)
 
-N = 100
+N = 5
 M = np.random.normal(M_0, sigma_M, N)
 z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
