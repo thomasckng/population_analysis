@@ -23,7 +23,7 @@ M_z = M*(1+z)
 print("Mean of M: ", M.mean())
 
 def normal_distribution(x, mu, sigma):
-    return 1/(sigma*jnp.sqrt(2*np.pi))*jnp.exp(-0.5*((x-mu)/sigma)**2)
+    return 1/(sigma*jnp.sqrt(2*jnp.pi))*jnp.exp(-0.5*((x-mu)/sigma)**2)
 
 def p_z(z, z_0, sigma_z):
     return normal_distribution(z, z_0, sigma_z)

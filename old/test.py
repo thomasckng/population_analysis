@@ -23,10 +23,10 @@ M_z = M*(1+z)
 print("Mean of M: ", M.mean())
 
 def log_p_z(z, z_0, sigma_z):
-    return -jnp.log(sigma_z)-0.5*jnp.log(2*np.pi)-0.5*((z-z_0)/sigma_z)**2
+    return -jnp.log(sigma_z)-0.5*jnp.log(2*jnp.pi)-0.5*((z-z_0)/sigma_z)**2
 
 def log_p_M_z(M_z, z, M_0, sigma_M):
-    return -jnp.log(sigma_M)-0.5*jnp.log(2*np.pi)-0.5*((M_z/(1+z)-M_0)/sigma_M)**2
+    return -jnp.log(sigma_M)-0.5*jnp.log(2*jnp.pi)-0.5*((M_z/(1+z)-M_0)/sigma_M)**2
 
 def log_likelihood(x):
     return jnp.sum(log_p_M_z(M_z, x[n_param:], x[2], x[3]) + log_p_z(x[n_param:], x[0], x[1]) - jnp.log(1+x[n_param:]))
