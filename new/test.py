@@ -22,15 +22,18 @@ z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
 print("Mean of M: ", M.mean())
 
-def log_p_z(z, z_0, sigma_z):
-    return -jnp.log(sigma_z)-0.5*jnp.log(2*np.pi)-0.5*((z-z_0)/sigma_z)**2
+def normal_distribution(x, mu, sigma):
+    return 1/(sigma*jnp.sqrt(2*np.pi))*jnp.exp(-0.5*((x-mu)/sigma)**2)
 
-def log_p_M_z(M_z, z, M_0, sigma_M):
-    return -jnp.log(sigma_M)-0.5*jnp.log(2*np.pi)-0.5*((M_z/(1+z)-M_0)/sigma_M)**2
+def p_z(z, z_0, sigma_z):
+    return normal_distribution(z, z_0, sigma_z)
+
+def p_M_z(M_z, z, M_0, sigma_M):
+    return normal_distribution(M_z/(1+z), M_0, sigma_M)
 
 def log_likelihood(x):
     z = np.linspace(0, 20, 1000)
-    return jnp.log(jnp.trapz(jnp.exp(log_p_M_z(M_z, z, x[2], x[3]) + log_p_z(z, x[0], x[1])), z))
+    return jnp.log(jnp.trapz(p_M_z(M_z, z, x[2], x[3]) * p_z(z, x[0], x[1]) / (1 + z), z))
 
 n_dim = n_param
 n_chains = 1000
