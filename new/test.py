@@ -33,7 +33,9 @@ def p_M_z(M_z, z, M_0, sigma_M):
 
 def log_likelihood(x):
     z = np.linspace(0, 20, 1000).reshape(-1,1)
-    return jnp.log(jnp.trapz(p_M_z(M_z, z, x[2], x[3]) * p_z(z, x[0], x[1]) / (1 + z), z))
+    ll = jnp.log(jnp.sum(p_M_z(M_z, z, x[2], x[3]) * p_z(z, x[0], x[1]) / (1 + z), axis=1))
+    print(ll.shape)
+    return ll
 
 n_dim = n_param
 n_chains = 1000
