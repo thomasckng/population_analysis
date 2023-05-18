@@ -29,7 +29,7 @@ def log_p_M_z(M_z, z, M_0, sigma_M):
     return -jnp.log(sigma_M)-0.5*jnp.log(2*np.pi)-0.5*((M_z/(1+z)-M_0)/sigma_M)**2
 
 def log_likelihood(x):
-    return jnp.sum(log_p_M_z(M_z, x[n_param:], x[2], x[3]) + log_p_z(x[n_param:], x[0], x[1] - jnp.log(1+x[n_param:])))
+    return jnp.sum(log_p_M_z(M_z, x[n_param:], x[2], x[3]) + log_p_z(x[n_param:], x[0], x[1]) - jnp.log(1+x[n_param:]))
 
 n_dim = n_param+N
 n_chains = 1000
