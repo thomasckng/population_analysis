@@ -1,5 +1,5 @@
-import os
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".7"
+# import os
+# os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".7"
 
 import numpy as np
 import jax
@@ -35,8 +35,8 @@ n_dim = n_param+N
 n_chains = 1000
 n_loop_training = 20
 n_loop_production = 20
-n_local_steps = 200
-n_global_steps = 200
+n_local_steps = 300
+n_global_steps = 300
 learning_rate = 0.001
 max_samples = 100000
 momentum = 0.9
