@@ -12,12 +12,12 @@ from flowMC.utils.PRNG_keys import initialize_rng_keys
 z_0 = 2
 s_z = 0.3
 M_0 = 50
-sigma_M = 5
-true_param = [z_0, s_z, M_0, sigma_M]
+s_M = 5
+true_param = [z_0, s_z, M_0, s_M]
 n_param = len(true_param)
 
 N = 10
-M = np.random.normal(M_0, sigma_M, N)
+M = np.random.normal(M_0, s_M, N)
 z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
 print("Mean of M: ", M.mean())
@@ -32,12 +32,11 @@ def p_M_z(M_z, z, M_0, sigma_M):
     return normal_distribution(M_z/(1+z), M_0, sigma_M)
 
 def log_likelihood(x):
-    M_z_array = jnp.linspace(0, 150, 500)
-    z_array = np.linspace(0, 20, 500).reshape(-1,1)
-    grid = (p_M_z(M_z_array, z_array, x[2], x[3]) * p_z(z_array, x[0], x[1]) / (1 + z_array))
+    M_z_array = jnp.linspace(5, 300, 1000)
+    z_array = np.linspace(0.01, 20, 1000).reshape(-1,1)
+    grid = p_M_z(M_z_array, z_array, x[2], x[3]) * p_z(z_array, x[0], x[1]) / (1 + z_array)
     likelihood = jnp.trapz(grid, z_array, axis=0)
     log_likelihood = jnp.sum(jnp.log(jnp.interp(M_z, M_z_array, likelihood)))
-    print(log_likelihood)
     return log_likelihood
 
 n_dim = n_param
@@ -54,7 +53,7 @@ batch_size = 50000
 
 rng_key_set = initialize_rng_keys(n_chains, seed=42)
 
-prior_range = jnp.array([[0,5],[0,3],[0,100],[0,10],[0,10]])
+prior_range = jnp.array([[0.01,5],[0.0001,3],[5,100],[0.0001,10]])
 
 def prior(x):
     output = 0.

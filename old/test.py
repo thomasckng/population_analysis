@@ -12,12 +12,12 @@ from flowMC.utils.PRNG_keys import initialize_rng_keys
 z_0 = 2
 s_z = 0.3
 M_0 = 50
-sigma_M = 5
-true_param = [z_0, s_z, M_0, sigma_M]
+s_M = 5
+true_param = [z_0, s_z, M_0, s_M]
 n_param = len(true_param)
 
 N = 50
-M = np.random.normal(M_0, sigma_M, N)
+M = np.random.normal(M_0, s_M, N)
 z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
 print("Mean of M: ", M.mean())
