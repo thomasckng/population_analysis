@@ -32,10 +32,13 @@ def p_M_z(M_z, z, M_0, sigma_M):
     return normal_distribution(M_z/(1+z), M_0, sigma_M)
 
 def log_likelihood(x):
-    z = np.linspace(0, 20, 1000).reshape(-1,1)
-    ll = jnp.log(jnp.sum(p_M_z(M_z, z, x[2], x[3]) * p_z(z, x[0], x[1]) / (1 + z), axis=0))
-    print(ll.shape)
-    return ll
+    M_z_array = jnp.linspace(5, 230, 200)
+    z_array = np.linspace(0, 20, 100).reshape(-1,1)
+    dz = z_array[1]-z_array[0]
+    likelihood = jnp.sum((p_M_z(M_z_array, z_array, x[2], x[3]) * p_z(z_array, x[0], x[1]) / (1 + z_array)) * dz, axis=1)
+    print(likelihood)
+    log_likelihood = jnp.sum(jnp.log(jnp.interp(M_z, M_z_array, likelihood)))
+    return log_likelihood
 
 n_dim = n_param
 n_chains = 1000
