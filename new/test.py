@@ -32,11 +32,12 @@ def p_M_z(M_z, z, M_0, sigma_M):
     return normal_distribution(M_z/(1+z), M_0, sigma_M)
 
 def log_likelihood(x):
-    M_z_array = jnp.linspace(5, 230, 200)
-    z_array = np.linspace(0, 20, 100).reshape(-1,1)
+    M_z_array = jnp.linspace(0, 150, 500)
+    z_array = np.linspace(0, 20, 500).reshape(-1,1)
     grid = (p_M_z(M_z_array, z_array, x[2], x[3]) * p_z(z_array, x[0], x[1]) / (1 + z_array))
     likelihood = jnp.trapz(grid, z_array, axis=0)
     log_likelihood = jnp.sum(jnp.log(jnp.interp(M_z, M_z_array, likelihood)))
+    print(log_likelihood)
     return log_likelihood
 
 n_dim = n_param
