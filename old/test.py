@@ -1,5 +1,5 @@
 import os
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".5"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".7"
 
 import numpy as np
 import jax
@@ -38,7 +38,7 @@ n_loop_production = 20
 n_local_steps = 2000
 n_global_steps = 2000
 learning_rate = 0.001
-max_samples = 10000000
+max_samples = 1000000
 momentum = 0.9
 num_epochs = 60
 batch_size = 50000
