@@ -1,5 +1,5 @@
-import os
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".7"
+# import os
+# os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".7"
 
 import numpy as np
 import jax
@@ -32,7 +32,7 @@ def p_M_z(M_z, z, M_0, sigma_M):
     return normal_distribution(M_z/(1+z), M_0, sigma_M)
 
 def log_likelihood(x):
-    z = np.linspace(0, 20, 1000)
+    z = np.linspace(0, 20, 1000).reshape(-1,1)
     return jnp.log(jnp.trapz(p_M_z(M_z, z, x[2], x[3]) * p_z(z, x[0], x[1]) / (1 + z), z))
 
 n_dim = n_param
