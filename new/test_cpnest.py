@@ -26,8 +26,9 @@ def p_M_z(M_z, z, M_0, sigma_M):
 def log_likelihood(M_z, z_0, m_0, s_z, s_m):
     M_z_array = np.linspace(5, 300, 1000)
     z_array = np.linspace(0.01, 20, 1000).reshape(-1,1)
+    dz = z_array[1]-z_array[0]
     grid = p_M_z(M_z_array, z_array, m_0, s_m) * p_z(z_array, z_0, s_z) / (1 + z_array)
-    likelihood = np.trapz(grid, z_array, axis=0)
+    likelihood = np.sum(grid, axis=0)*dz
     log_likelihood = np.sum(np.log(np.interp(M_z, M_z_array, likelihood)))
     return log_likelihood
 
