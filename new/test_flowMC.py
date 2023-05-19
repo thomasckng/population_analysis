@@ -22,20 +22,26 @@ z = np.random.normal(z_0, s_z, N)
 M_z = M*(1+z)
 print("Mean of M: ", M.mean())
 
+@jax.jit
 def normal_distribution(x, mu, sigma):
     return 1/(sigma*jnp.sqrt(2*jnp.pi))*jnp.exp(-0.5*((x-mu)/sigma)**2)
 
+@jax.jit
 def p_z(z, z_0, sigma_z):
     return normal_distribution(z, z_0, sigma_z)
 
+@jax.jit
 def p_M_z(M_z, z, M_0, sigma_M):
     return normal_distribution(M_z/(1+z), M_0, sigma_M)
 
+@jax.jit
 def log_likelihood(x):
-    M_z_array = jnp.linspace(5, 300, 1000)
-    z_array = np.linspace(0.01, 20, 1000).reshape(-1,1)
+    M_z_array = jnp.linspace(5, 300, 500)
+    dm = M_z_array[1]-M_z_array[0]
+    z_array = jnp.linspace(0.01, 20, 500).reshape(-1,1)
+    dz = z_array[1]-z_array[0]
     grid = p_M_z(M_z_array, z_array, x[2], x[3]) * p_z(z_array, x[0], x[1]) / (1 + z_array)
-    likelihood = jnp.trapz(grid, z_array, axis=0)
+    likelihood = jnp.sum(grid, axis=0)*dz/jnp.sum(grid*dz*dm)
     log_likelihood = jnp.sum(jnp.log(jnp.interp(M_z, M_z_array, likelihood)))
     return log_likelihood
 
