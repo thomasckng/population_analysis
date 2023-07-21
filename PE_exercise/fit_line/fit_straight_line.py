@@ -3,6 +3,7 @@
 import cpnest
 import cpnest.model
 import numpy as np
+import h5py
 
 # Gaussian noise around straight line with known sigma
 sigma = 1
@@ -43,12 +44,34 @@ if __name__ == '__main__':
         np.savetxt('points.txt', pts)
     else:
         pts = np.loadtxt('points.txt')
-    
-    W = Inference(pts)
-    work = cpnest.CPNest(W, verbose = 2, output = 'inference/', nnest = 1, nensemble = 1, nlive = 1000)
-    work.run()
-    post = work.posterior_samples.ravel()
-    samps = np.column_stack([post[lab] for lab in ['m', 'c']])
 
-    print('m = {0:.3f}'.format(m))
-    print('c = {0:.3f}'.format(c))
+    W = Inference(pts)
+    if not postprocess:
+        work = cpnest.CPNest(W, verbose = 2, output = 'inference/', nnest = 1, nensemble = 1, nlive = 1000)
+        work.run()
+        post = work.posterior_samples.ravel()
+        samps = np.column_stack([post[lab] for lab in ['m', 'c']])
+    else:
+        with h5py.File('./inference/cpnest.h5', 'r') as f:
+            post = f['combined']['posterior_samples'][()]
+    samps   = np.column_stack([post[lab] for lab in ['m', 'c']])
+    
+    # Plotting
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    sns.set_palette('colorblind')
+
+    # Plot points
+    plt.scatter(pts[:,0], pts[:,1], color = sns.color_palette()[0], label = 'Data')
+
+    # Plot straight line with true parameters
+    x = np.linspace(-10, 10, 100)
+    plt.plot(x, m*x + c, color = sns.color_palette()[3], label = 'True')
+
+    # Plot straight line with maximum likelihood parameters
+    max_likelihood = post[np.argmax(post['logL'])]
+    plt.plot(x, max_likelihood[0]*x + max_likelihood[1], color = sns.color_palette()[4], linestyle = '--', label = 'Maximum likelihood')
+
+    # Save figure
+    plt.legend()
+    plt.savefig('inference/fit_straight_line.pdf')
