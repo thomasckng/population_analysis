@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     # Plot Gaussian with maximum likelihood parameters
     max_likelihood = post[np.argmax(post['logL'])]
-    plt.plot(x, normal_distribution(x, max_likelihood[0], max_likelihood[1]), color = sns.color_palette()[4], linestyle = '--', label = 'Maximum Likelihood')
+    plt.plot(x, normal_distribution(x, max_likelihood[0], max_likelihood[1]), color = sns.color_palette()[4], linestyle = '--', label = 'Max L')
 
     # Save plot
     plt.legend()

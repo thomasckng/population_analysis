@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     # Plot straight line with maximum likelihood parameters
     max_likelihood = post[np.argmax(post['logL'])]
-    plt.plot(x, max_likelihood[0]*x + max_likelihood[1], color = sns.color_palette()[4], linestyle = '--', label = 'Maximum likelihood')
+    plt.plot(x, max_likelihood[0]*x + max_likelihood[1], color = sns.color_palette()[4], linestyle = '--', label = 'Max L')
 
     # Save figure
     plt.legend()
