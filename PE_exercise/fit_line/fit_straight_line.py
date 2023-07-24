@@ -58,6 +58,7 @@ if __name__ == '__main__':
     # Plotting
     import matplotlib.pyplot as plt
     import seaborn as sns
+    sns.set_palette('colorblind')
 
     # Plot points
     plt.scatter(pts[:,0], pts[:,1], color = sns.color_palette()[0], label = 'Data')

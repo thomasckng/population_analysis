@@ -53,6 +53,7 @@ if __name__ == '__main__':
     # Plotting
     import matplotlib.pyplot as plt
     import seaborn as sns
+    sns.set_palette('colorblind')
 
     # Plot samples histogram
     plt.hist(samples, bins = 20, density = True, color = sns.color_palette()[0], label = 'Data')
