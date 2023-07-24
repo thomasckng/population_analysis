@@ -30,7 +30,6 @@ class Inference(cpnest.model.Model):
         return logL
 
 if __name__ == '__main__':
-    
     m = np.random.uniform(-10, 10)
     c = np.random.uniform(-10, 10)
     npts = 10
@@ -59,7 +58,6 @@ if __name__ == '__main__':
     # Plotting
     import matplotlib.pyplot as plt
     import seaborn as sns
-    sns.set_palette('colorblind')
 
     # Plot points
     plt.scatter(pts[:,0], pts[:,1], color = sns.color_palette()[0], label = 'Data')
