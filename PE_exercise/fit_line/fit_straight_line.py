@@ -29,11 +29,15 @@ class Inference(cpnest.model.Model):
         logL = np.sum(np.log(normal_distribution(self.pts[:,1], x['m']*self.pts[:,0] + x['c'], sigma)))
         return logL
 
-m = np.random.uniform(-10, 10)
-c = np.random.uniform(-10, 10)
+m = np.random.uniform(-5, 5)
+c = np.random.uniform(-5, 5)
 npts = 10
 
-postprocess = True
+import sys
+if sys.argv[1] == '1':
+    postprocess = True
+else:
+    postprocess = False
 
 # Generate points
 if not postprocess:
@@ -62,8 +66,9 @@ else:
         post = f['combined']['posterior_samples'][()]
 samps = np.column_stack([post[lab] for lab in ['m', 'c']])
 
-# Plotting
+# Corner plot
 import seaborn as sns
+import matplotlib.pyplot as plt
 import pandas as pd
 sns.set_theme(palette='colorblind')
 
@@ -84,4 +89,19 @@ g.axes[1,0].axvline(m, color = 'k', linestyle = '--')
 g.axes[1,0].axhline(c, color = 'k', linestyle = '--')
 g.axes[1,1].axvline(c, color = 'k', linestyle = '--')
 
-g.savefig('inference/fit_straight_line.pdf', dpi = 300)
+g.savefig('inference/fit_straight_line_corner.pdf', dpi = 300)
+plt.close()
+
+# Function plot
+plt.scatter(pts[:,0], pts[:,1], color = 'k', label = 'Data')
+plt.errorbar(pts[:,0], pts[:,1], yerr = 3*sigma, fmt = 'none', color = 'k')
+x = np.linspace(-10, 10, 100)
+plt.plot(x, m*x + c, color = 'k', label = 'True', linestyle = '--')
+plt.plot(x, np.median(samps[:,0])*x + np.median(samps[:,1]), color = 'r', label = 'Inferred')
+plt.fill_between(x, np.percentile(samps[:,0], 16)*x + np.percentile(samps[:,1], 16), np.percentile(samps[:,0], 84)*x + np.percentile(samps[:,1], 84), color = 'r', alpha = 0.2)
+
+plt.xlabel(r'$x$')
+plt.ylabel(r'$y$')
+plt.legend()
+
+plt.savefig('inference/fit_straight_line_function.pdf', dpi = 300)

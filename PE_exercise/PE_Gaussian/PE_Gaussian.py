@@ -31,7 +31,11 @@ mu = np.random.uniform(-10, 10)
 sigma = np.random.uniform(0, 5)
 npts = 100
 
-postprocess = True
+import sys
+if sys.argv[1] == '1':
+    postprocess = True
+else:
+    postprocess = False
 
 # Generate points
 if not postprocess:
@@ -58,7 +62,7 @@ else:
         post = f['combined']['posterior_samples'][()]
 samps = np.column_stack([post[lab] for lab in ['mu', 'sigma']])
     
-# Plotting
+# Corner plot
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -113,4 +117,18 @@ g.axes[1,0].axvline(mu, color = 'k', linestyle = '--')
 g.axes[1,0].axhline(sigma, color = 'k', linestyle = '--')
 g.axes[1,1].axvline(sigma, color = 'k', linestyle = '--')
 
-g.savefig('inference/PE_Gaussian.pdf', dpi=300)
+g.savefig('inference/PE_Gaussian_corner.pdf', dpi=300)
+
+# Histogram
+fig, ax = plt.subplots()
+ax.hist(samples, bins=20, density=True, label='Data')
+x = np.linspace(-30, 30, 1000)
+ax.plot(x, normal_distribution(x, mu, sigma), color='k', label='True', linestyle='--')
+ax.plot(x, normal_distribution(x, np.median(post['mu']), np.median(post['sigma'])), color='r', label='Inferred')
+ax.fill_between(x, normal_distribution(x, np.percentile(post['mu'], 16), np.percentile(post['sigma'], 16)), normal_distribution(x, np.percentile(post['mu'], 84), np.percentile(post['sigma'], 84)), color='r', alpha=0.2)
+
+ax.set_xlabel(r'$x$')
+ax.set_ylabel(r'$p(x)$')
+ax.legend()
+
+fig.savefig('inference/PE_Gaussian_function.pdf', dpi=300)
