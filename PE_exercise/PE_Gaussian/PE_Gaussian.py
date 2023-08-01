@@ -18,7 +18,7 @@ class Inference(cpnest.model.Model):
     def log_prior(self, x):
         logP = super(Inference,self).log_prior(x)
         if np.isfinite(logP):
-            return 0.0
+            return 1/x['sigma']
         else:
             return -np.inf
 
@@ -122,7 +122,7 @@ g.savefig('inference/PE_Gaussian_corner.pdf', dpi=300)
 # Histogram
 fig, ax = plt.subplots()
 ax.hist(samples, bins=20, density=True, label='Data')
-x = np.linspace(-30, 30, 1000)
+x = np.linspace(samples.min()-5, samples.max()+5, 1000)
 ax.plot(x, normal_distribution(x, mu, sigma), color='k', label='True', linestyle='--')
 ax.plot(x, normal_distribution(x, np.median(post['mu']), np.median(post['sigma'])), color='r', label='Inferred')
 ax.fill_between(x, normal_distribution(x, np.percentile(post['mu'], 16), np.percentile(post['sigma'], 16)), normal_distribution(x, np.percentile(post['mu'], 84), np.percentile(post['sigma'], 84)), color='r', alpha=0.2)
