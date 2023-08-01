@@ -26,7 +26,7 @@ class Inference(cpnest.model.Model):
             return -np.inf
 
     def log_likelihood(self, x):
-        logL = np.sum(np.log(normal_distribution(self.pts[:,1], x['m']*self.pts[:,0] + x['c'], sigma)))
+        logL = np.sum(np.log(normal_distribution(self.pts[:,0], (self.pts[:,1] - x['c']) / x['m'], sigma) * normal_distribution(self.pts[:,1], x['m'] * self.pts[:,0] + x['c'], sigma)))
         return logL
 
 m = np.random.uniform(-5, 5)
@@ -42,8 +42,8 @@ else:
 # Generate points
 if not postprocess:
     x = np.random.uniform(-10, 10, size = npts)
-    y = m*x + c + np.random.normal(0, sigma, size = npts)
-    pts = np.column_stack([x, y])
+    y = m * x + c
+    pts = np.column_stack([x + np.random.normal(0, sigma, size = npts), y + np.random.normal(0, sigma, size = npts)])
     np.savetxt('points.txt', pts)
     with open('true_values.txt', 'w') as f:
         f.write('m = '+str(m)+'\n')
@@ -94,8 +94,8 @@ plt.close()
 
 # Function plot
 plt.scatter(pts[:,0], pts[:,1], color = 'k', label = 'Data')
-plt.errorbar(pts[:,0], pts[:,1], yerr = 3*sigma, fmt = 'none', color = 'k')
-x = np.linspace(-10, 10, 100)
+plt.errorbar(pts[:,0], pts[:,1], xerr=sigma, yerr = sigma, fmt = 'none', color = 'k')
+x = np.linspace(-15, 15, 100)
 plt.plot(x, m*x + c, color = 'k', label = 'True', linestyle = '--')
 plt.plot(x, np.median(samps[:,0])*x + np.median(samps[:,1]), color = 'r', label = 'Inferred')
 plt.fill_between(x, np.percentile(samps[:,0], 16)*x + np.percentile(samps[:,1], 16), np.percentile(samps[:,0], 84)*x + np.percentile(samps[:,1], 84), color = 'r', alpha = 0.2)
