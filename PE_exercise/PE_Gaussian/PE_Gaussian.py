@@ -18,7 +18,7 @@ class Inference(cpnest.model.Model):
     def log_prior(self, x):
         logP = super(Inference,self).log_prior(x)
         if np.isfinite(logP):
-            return 1/x['sigma']
+            return np.log(1/x['sigma'])
         else:
             return -np.inf
 
