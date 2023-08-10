@@ -68,28 +68,7 @@ import seaborn as sns
 import pandas as pd
 import sys
 sys.path.append('../../')
-from kde_contour import kdeplot_2d_clevels, Bounded_1d_kde
 sns.set_theme(palette='colorblind')
-
-def kdeplot2d(x, y, rng=12345, **kws):
-    kws.pop('label', None)
-    kdeplot_2d_clevels(xs=x, ys=y, auto_bound=True, rng=rng, **kws)
-
-def kdeplot1d(x, **kws):
-    if np.all(x.isna()):
-        return
-    for key in ['label', 'hue_order', 'color']:
-        kws.pop(key, None)
-    df = pd.DataFrame({'x': x, 'y': Bounded_1d_kde(x, xlow=min(x), xhigh=max(x), **kws)(x)})
-    df = df.sort_values(['x'])
-    plt.fill_between(df['x'], df['y'], np.zeros(len(x)), alpha=0.2)
-    plt.plot(df['x'], df['y'])
-    plt.xlim(df['x'].min(), df['x'].max())
-    current_ymax = plt.ylim()[1]
-    if current_ymax > df['y'].max()*1.05:
-        plt.ylim(0,current_ymax)
-    else:
-        plt.ylim(0,df['y'].max()*1.05)
 
 df = pd.DataFrame(samps, columns = ['mu', 'sigma'])
 vars = ['mu', 'sigma']
@@ -100,13 +79,8 @@ g = sns.PairGrid(df,
                  layout_pad=0.
                 )
 
-g.map_lower(kdeplot2d, levels=[0.90,0.3935])
-g.map_diag(kdeplot1d) 
-
-for i in range(len(vars)):
-    for j in range(i):
-        g.axes[i,j].set_xlim(df[vars[j]].min(), df[vars[j]].max())
-        g.axes[i,j].set_ylim(df[vars[i]].min(), df[vars[i]].max())
+g.map_lower(sns.histplot)
+g.map_diag(sns.histplot) 
 
 g.axes[1,0].set_xlabel(r"$\mu$")
 g.axes[1,0].set_ylabel(r"$\sigma$")
@@ -121,11 +95,14 @@ g.savefig('inference/PE_Gaussian_corner.pdf', dpi=300)
 
 # Histogram
 fig, ax = plt.subplots()
-ax.hist(samples, bins=20, density=True, label='Data')
+ax.hist(samples, bins=20, density=True, label='Data', color=sns.color_palette()[3])
 x = np.linspace(samples.min()-5, samples.max()+5, 1000)
 ax.plot(x, normal_distribution(x, mu, sigma), color='k', label='True', linestyle='--')
-ax.plot(x, normal_distribution(x, np.median(post['mu']), np.median(post['sigma'])), color='r', label='Inferred')
-ax.fill_between(x, normal_distribution(x, np.percentile(post['mu'], 16), np.percentile(post['sigma'], 16)), normal_distribution(x, np.percentile(post['mu'], 84), np.percentile(post['sigma'], 84)), color='r', alpha=0.2)
+f = np.array([normal_distribution(x, samp[0], samp[1]) for samp in samps])
+percs = np.percentile(f, [5, 16, 50, 84, 95], axis=0)
+ax.fill_between(x, percs[0], percs[-1], color=sns.color_palette()[0], alpha=0.3)
+ax.fill_between(x, percs[1], percs[-2], color=sns.color_palette()[0], alpha=0.3)
+ax.plot(x, percs[2], color=sns.color_palette()[0], label='Inferred')
 
 ax.set_xlabel(r'$x$')
 ax.set_ylabel(r'$p(x)$')

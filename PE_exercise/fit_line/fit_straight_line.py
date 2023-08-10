@@ -77,8 +77,8 @@ g = sns.PairGrid(df,
                  vars = ['m', 'c'],
                  diag_sharey=False,
                  corner=True)
-g.map_diag(sns.kdeplot, fill=True)
-g.map_lower(sns.kdeplot, levels=[1-0.9, 1-0.3935])
+g.map_diag(sns.histplot)
+g.map_lower(sns.histplot)
 
 g.axes[1,0].set_xlabel(r'$m$')
 g.axes[1,0].set_ylabel(r'$c$')
@@ -97,8 +97,11 @@ plt.scatter(pts[:,0], pts[:,1], color = 'k', label = 'Data')
 plt.errorbar(pts[:,0], pts[:,1], xerr=sigma, yerr = sigma, fmt = 'none', color = 'k')
 x = np.linspace(-15, 15, 100)
 plt.plot(x, m*x + c, color = 'k', label = 'True', linestyle = '--')
-plt.plot(x, np.median(samps[:,0])*x + np.median(samps[:,1]), color = 'r', label = 'Inferred')
-plt.fill_between(x, np.percentile(samps[:,0], 16)*x + np.percentile(samps[:,1], 16), np.percentile(samps[:,0], 84)*x + np.percentile(samps[:,1], 84), color = 'r', alpha = 0.2)
+f = np.array([samp[0]*x+samp[1] for samp in samps])
+percs = np.percentile(f, [5, 16, 50, 84, 95], axis = 0)
+plt.fill_between(x, percs[0], percs[-1], color = sns.color_palette()[0], alpha = 0.3)
+plt.fill_between(x, percs[1], percs[-2], color = sns.color_palette()[0], alpha = 0.3)
+plt.plot(x, percs[2], color = sns.color_palette()[0], label = 'Inference')
 
 plt.xlabel(r'$x$')
 plt.ylabel(r'$y$')
