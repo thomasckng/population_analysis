@@ -6,10 +6,8 @@ import numpy as np
 import h5py
 
 # Gaussian noise around straight line with known sigma
-sigma = 1
-
-def normal_distribution(x, mu, sigma):
-    return 1/(sigma*np.sqrt(2*np.pi))*np.exp(-0.5*((x-mu)/sigma)**2)
+sigma_x = 10
+sigma_y = 50
 
 class Inference(cpnest.model.Model):
     def __init__(self, pts):
@@ -26,11 +24,12 @@ class Inference(cpnest.model.Model):
             return -np.inf
 
     def log_likelihood(self, x):
-        logL = np.sum(np.log(normal_distribution(self.pts[:,0], (self.pts[:,1] - x['c']) / x['m'], sigma) * normal_distribution(self.pts[:,1], x['m'] * self.pts[:,0] + x['c'], sigma)))
+        logL = np.sum(-0.5*((((self.pts[:,1]-x['c'])/x['m'])-self.pts[:,0])**2/(sigma_x**2+(sigma_y/x['m'])**2)))
         return logL
 
 m = np.random.uniform(-5, 5)
 c = np.random.uniform(-5, 5)
+L = 100
 npts = 10
 
 import sys
@@ -41,19 +40,21 @@ else:
 
 # Generate points
 if not postprocess:
-    x = np.random.uniform(-10, 10, size = npts)
+    x = np.random.uniform(-L/2, L/2, size = npts)
     y = m * x + c
-    pts = np.column_stack([x + np.random.normal(0, sigma, size = npts), y + np.random.normal(0, sigma, size = npts)])
+    pts = np.column_stack([x + np.random.normal(0, sigma_x, size = npts), y + np.random.normal(0, sigma_y, size = npts)])
     np.savetxt('points.txt', pts)
     with open('true_values.txt', 'w') as f:
         f.write('m = '+str(m)+'\n')
         f.write('c = '+str(c)+'\n')
+        f.write('L = '+str(L)+'\n')
 else:
     pts = np.loadtxt('points.txt')
     with open('true_values.txt', 'r') as f:
         lines = f.readlines()
         m = float(lines[0].split('=')[1])
         c = float(lines[1].split('=')[1])
+        L = float(lines[2].split('=')[1])
 
 # Inference
 W = Inference(pts)
@@ -94,8 +95,8 @@ plt.close()
 
 # Function plot
 plt.scatter(pts[:,0], pts[:,1], color = 'k', label = 'Data')
-plt.errorbar(pts[:,0], pts[:,1], xerr=sigma, yerr = sigma, fmt = 'none', color = 'k')
-x = np.linspace(-15, 15, 100)
+plt.errorbar(pts[:,0], pts[:,1], xerr=sigma_x, yerr = sigma_y, fmt = 'none', color = 'k')
+x = np.linspace(-L/2-sigma_x*3, L/2+sigma_x*3, 10*L)
 plt.plot(x, m*x + c, color = 'k', label = 'True', linestyle = '--')
 f = np.array([samp[0]*x+samp[1] for samp in samps])
 percs = np.percentile(f, [5, 16, 50, 84, 95], axis = 0)
