@@ -84,7 +84,7 @@ g.map_diag(sns.histplot)
 
 g.axes[1,0].set_xlabel(r"$\mu$")
 g.axes[1,0].set_ylabel(r"$\sigma$")
-g.axes[1,1].set_xlabel(r"$\mu$")
+g.axes[1,1].set_xlabel(r"$\sigma$")
 
 g.axes[0,0].axvline(mu, color = 'k', linestyle = '--')
 g.axes[1,0].axvline(mu, color = 'k', linestyle = '--')
