@@ -13,7 +13,7 @@ class Inference(cpnest.model.Model):
         super(Inference,self).__init__()
         self.samples = samples
         self.names = ['mu', 'sigma',]
-        self.bounds = [[-10, 10], [0, 5]]
+        self.bounds = [[-50, 50], [0, 20]]
 
     def log_prior(self, x):
         logP = super(Inference,self).log_prior(x)

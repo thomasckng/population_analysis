@@ -14,7 +14,7 @@ class Inference(cpnest.model.Model):
         super(Inference,self).__init__()
         self.pts = pts
         self.names = ['m', 'c',]
-        self.bounds = [[-10, 10], [-10, 10]]
+        self.bounds = [[-50, 50], [-500, 500]]
 
     def log_prior(self, x):
         logP = super(Inference,self).log_prior(x)
