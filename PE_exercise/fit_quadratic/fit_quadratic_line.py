@@ -7,7 +7,7 @@ import h5py
 
 # Gaussian noise around quadratic line with known sigma
 sigma_x = 10
-sigma_y = 50
+sigma_y = 100
 
 L = 100 # range of true x
 
@@ -16,7 +16,7 @@ class Inference(cpnest.model.Model):
         super(Inference,self).__init__()
         self.pts = pts
         self.names = ['a', 'b', 'c'] + ['x_{}'.format(i) for i in range(len(self.pts))]
-        self.bounds = [[-20, 20], [-200, 200], [-500, 500]] + [[-100, 100] for _ in range(len(self.pts))]
+        self.bounds = [[-20, 20], [-200, 200], [-1000, 1000]] + [[-100, 100] for _ in range(len(self.pts))]
 
     def log_prior(self, x):
         logP = super(Inference,self).log_prior(x)
@@ -82,9 +82,10 @@ df = pd.DataFrame(samps, columns = ['a', 'b', 'c'])
 g = sns.PairGrid(df,
                  vars = ['a', 'b', 'c'],
                  diag_sharey=False,
-                 corner=True)
+                 corner=False)
 g.map_diag(sns.histplot)
 g.map_lower(sns.histplot)
+g.map_upper(sns.kdeplot, fill=True)
 
 g.axes[2,0].set_xlabel(r'$a$')
 g.axes[1,0].set_ylabel(r'$b$')
@@ -93,11 +94,19 @@ g.axes[2,0].set_ylabel(r'$c$')
 g.axes[2,2].set_xlabel(r'$c$')
 
 g.axes[0,0].axvline(a, color = 'k', linestyle = '--')
+g.axes[0,1].axhline(a, color = 'k', linestyle = '--')
+g.axes[0,2].axhline(a, color = 'k', linestyle = '--')
 g.axes[1,0].axvline(a, color = 'k', linestyle = '--')
 g.axes[2,0].axvline(a, color = 'k', linestyle = '--')
+
+g.axes[0,1].axvline(b, color = 'k', linestyle = '--')
 g.axes[1,0].axhline(b, color = 'k', linestyle = '--')
 g.axes[1,1].axvline(b, color = 'k', linestyle = '--')
+g.axes[1,2].axhline(b, color = 'k', linestyle = '--')
 g.axes[2,1].axvline(b, color = 'k', linestyle = '--')
+
+g.axes[0,2].axvline(c, color = 'k', linestyle = '--')
+g.axes[1,2].axvline(c, color = 'k', linestyle = '--')
 g.axes[2,0].axhline(c, color = 'k', linestyle = '--')
 g.axes[2,1].axhline(c, color = 'k', linestyle = '--')
 g.axes[2,2].axvline(c, color = 'k', linestyle = '--')
@@ -106,7 +115,7 @@ g.savefig('inference/fit_quadratic_line_corner.pdf', dpi = 300)
 plt.close()
 
 # Function plot
-plt.scatter(pts[:,0], pts[:,1], color = 'k', label = 'Data')
+plt.scatter(pts[:,0], pts[:,1], marker='x', color = 'k', label = 'Data')
 plt.errorbar(pts[:,0], pts[:,1], xerr=sigma_x, yerr = sigma_y, fmt = 'none', color = 'k')
 x = np.linspace(-L/2-sigma_x*3, L/2+sigma_x*3, 10*L)
 plt.plot(x, a * x**2 + b * x + c, color = 'k', label = 'True', linestyle = '--')
@@ -116,8 +125,11 @@ plt.fill_between(x, percs[0], percs[-1], color = sns.color_palette()[0], alpha =
 plt.fill_between(x, percs[1], percs[-2], color = sns.color_palette()[0], alpha = 0.3)
 plt.plot(x, percs[2], color = sns.color_palette()[0], label = 'Inference')
 
+
+plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+plt.xlim(-L/2-sigma_x*3, L/2+sigma_x*3)
 plt.xlabel(r'$x$')
 plt.ylabel(r'$y$')
-plt.legend()
+plt.legend(loc='lower center')
 
 plt.savefig('inference/fit_quadratic_line_function.pdf', dpi = 300)
