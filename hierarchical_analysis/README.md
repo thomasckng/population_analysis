@@ -1,0 +1,1 @@
+newtonsConstantWithLabels.dat is retrieved from the following URL: https://github.com/sterinaldi/fund_const/blob/main/data/newtonsConstantWithLabels.dat
