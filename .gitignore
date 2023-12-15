@@ -3,3 +3,5 @@ inference
 __pycache__
 .ipynb_checkpoints/
 *.pdf
+*.pkl
+prob_density.txt
