@@ -32,8 +32,9 @@ n_draws = 2000
 norm_dist = norm()
 
 # Generate samples from source distribution
+print("Generating samples...")
 Mz_list = []
-for _ in range(100):
+for _ in tqdm(range(100)):
     dL = rejection_sampler(n_draws, gaussian, [0, 5000])
     M  = np.array([mean(d) + std(d)*norm_dist.rvs() for d in dL])
     z  = np.array([_find_redshift(omega, d) for d in dL])
@@ -45,6 +46,7 @@ M_min = 0
 M_max = 200
 n_draws = 1000
 
+print("Preparing model pdfs...")
 mz = np.linspace(10,200,1000)
 dL = np.linspace(10,5000,500)
 
@@ -61,6 +63,7 @@ m = np.einsum("i, jk -> ikj", mz, np.reciprocal(1+z))
 model_pdf = np.trapz(np.einsum("ijk, j -> ijk", evolving_gaussian(m, dL.reshape(-1,1)), gaussian(dL)), dL, axis=1)
 model_pdf = model_pdf / np.trapz(model_pdf, mz, axis=0)
 
+print("Computing pp plot...")
 H0_perc = []
 for i in range(100):
     samples = Mz_list[i]
@@ -78,6 +81,7 @@ H0_perc = np.array(H0_perc)
 np.save("H0_perc.npy", H0_perc)
 
 # pp plot
+print("Plotting...")
 plt.figure(figsize=(6,6))
 plt.plot(np.linspace(0,1,100), np.linspace(0,1,100), "k--")
 plt.plot(np.sort(H0_perc), np.linspace(0,1,100), "r-")
