@@ -31,23 +31,25 @@ def gaussian(dL, mu = 1600, sigma = 400):
 
 true_H0 = 40. # km/s/Mpc (Deliberately off value)
 omega = CosmologicalParameters(true_H0/100., 0.315, 0.685, -1., 0.)
-n_draws = 2000
+n_draws_samples = 2000
 norm_dist = norm()
 
 # Generate samples from source distribution
 print("Generating samples...")
-Mz_list = []
-for _ in tqdm(range(100)):
-    dL = rejection_sampler(n_draws, gaussian, [0, 5000])
-    M  = np.array([mean(d) + std(d) * norm_dist.rvs() for d in dL])
-    z  = np.array([_find_redshift(omega, d) for d in dL])
-    Mz = M * (1 + z)
-    Mz_list.append(Mz)
-Mz_list = np.array(Mz_list)
-
 M_min = 0
 M_max = 200
-n_draws = 1000
+
+Mz_list = []
+for _ in tqdm(range(100)):
+    in_bound = False
+    while not in_bound:
+        dL = rejection_sampler(n_draws_samples, gaussian, [0, 5000])
+        M  = np.array([mean(d) + std(d) * norm_dist.rvs() for d in dL])
+        z  = np.array([_find_redshift(omega, d) for d in dL])
+        Mz = M * (1 + z)
+        in_bound = Mz.max() < M_max
+    Mz_list.append(Mz)
+Mz_list = np.array(Mz_list)
 
 print("Preparing model pdfs...")
 mz = np.linspace(10,200,1000)
@@ -77,13 +79,15 @@ model_pdf = model_pdf / np.trapz(model_pdf, mz, axis=0)
 #     return scipy_jsd(model_pdf, np.full((len(H0), len(mz)), figaro_pdf[i]).T)
 
 print("Computing pp plot...")
+n_draws_figaro = 1000
+
 H0_perc = []
 for i in tqdm(range(100)):
     # Reconstruct observed distribution using FIGARO
     samples = Mz_list[i]
     mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
-    draws = np.array([mix.density_from_samples(samples) for _ in tqdm(range(n_draws))])
-    # draws = [reconstruct_observed_distribution.remote(i) for _ in range(n_draws)]
+    draws = np.array([mix.density_from_samples(samples) for _ in range(n_draws_figaro)])
+    # draws = [reconstruct_observed_distribution.remote(i) for _ in range(n_draws_figaro)]
     # draws = np.array(ray.get(draws))
 
     figaro_pdf = np.array([draw.pdf(mz) for draw in draws])
