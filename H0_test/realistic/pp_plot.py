@@ -36,13 +36,13 @@ M_max = 200
 
 Mz_list = []
 for _ in tqdm(range(100)):
-    in_bound = False
-    while not in_bound:
+    valid = False
+    while not valid:
         dL = rejection_sampler(n_draws_samples, dLsq, [0, 5000])
         M  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
         z  = np.array([_find_redshift(omega, d) for d in dL])
         Mz = M * (1 + z)
-        in_bound = Mz.max() < M_max
+        valid = Mz.max() < M_max and not np.sum(np.isnan(Mz), dtype = 'bool')
     Mz_list.append(Mz)
 Mz_list = np.array(Mz_list)
 
