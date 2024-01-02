@@ -9,9 +9,7 @@ from figaro.utils import rejection_sampler
 from figaro.cosmology import CosmologicalParameters
 from figaro.load import _find_redshift
 from figaro import plot_settings
-# import ray
-
-# ray.init()
+import ray
 
 # Mass distribution
 def PLpeak(m, alpha = -2., mmin = 5., mmax = 70., mu = 30., sigma = 4., w = 0.2):
@@ -63,34 +61,29 @@ m = np.einsum("i, jk -> ikj", mz, np.reciprocal(1+z))
 model_pdf = np.trapz(np.einsum("ijk, j -> ijk", PLpeak(m), dLsq(dL)), dL, axis=1)
 model_pdf = model_pdf / np.trapz(model_pdf, mz, axis=0)
 
-# @ray.remote
-# def reconstruct_observed_distribution(samples):
-#     samples = Mz_list[i]
-#     mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
-#     return mix.density_from_samples(samples)
-
-# @ray.remote
-# def compute_jsd(i):
-#     return scipy_jsd(model_pdf, np.full((len(H0), len(mz)), figaro_pdf[i]).T)
+@ray.remote(num_cpus=1)
+class Worker:
+    def reconstruct_observed_distribution(self, i):
+        samples = Mz_list[i]
+        mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
+        return mix.density_from_samples(samples)
 
 print("Computing pp plot...")
 n_draws_figaro = 1000
+workers = [Worker.remote() for _ in range(10)]
 
 H0_perc = []
 for i in tqdm(range(100)):
     # Reconstruct observed distribution using FIGARO
-    samples = Mz_list[i]
-    mix_double_gaussian = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
-    draws = np.array([mix_double_gaussian.density_from_samples(samples) for _ in range(n_draws_figaro)])
-    # draws = [reconstruct_observed_distribution.remote(i) for _ in range(n_draws_figaro)]
-    # draws = np.array(ray.get(draws))
+    # samples = Mz_list[i]
+    # mix_double_gaussian = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
+    # draws = np.array([mix_double_gaussian.density_from_samples(samples) for _ in range(n_draws_figaro)])
+    draws = np.array([ray.get([w.reconstruct_observed_distribution.remote(i) for w in workers]) for _ in range(n_draws_figaro//len(workers))]).reshape(-1)
 
     figaro_pdf = np.array([draw.pdf(mz) for draw in draws])
 
     # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
     jsd = np.array([scipy_jsd(model_pdf, np.full((len(H0), len(mz)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
-    # jsd = [compute_jsd.remote(j) for j in range(len(figaro_pdf))]
-    # jsd = np.array(ray.get(jsd))
 
     # Find H0 that minimizes JSD for each DPGMM draw
     H0_samples = H0[np.argmin(jsd, axis=1)]
