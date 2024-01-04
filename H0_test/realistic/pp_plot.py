@@ -55,45 +55,55 @@ if __name__ == '__main__':
     M_min = 0
     M_max = 200
 
-    H0_perc = []
-    for i in tqdm(range(100)):
-        i = 0
-        while i < 10:
-            try:
-                # Generate samples from source distribution
-                valid = False
-                while not valid:
-                    dL = rejection_sampler(n_draws_samples, dLsq, [0, 5000])
-                    M  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
-                    z  = np.array([_find_redshift(omega, d) for d in dL])
-                    Mz = M * (1 + z)
-                    valid = Mz.max() < M_max and not np.sum(np.isnan(Mz), dtype = 'bool')
+    figaro_pdf_arr = []
+    jsd_arr = []
+    H0_samples_arr = []
+    H0_perc_arr = []
+    with Pool(50) as p:
+        for i in tqdm(range(100)):
+            i = 0
+            while i < 10:
+                try:
+                    # Generate samples from source distribution
+                    valid = False
+                    while not valid:
+                        dL = rejection_sampler(n_draws_samples, dLsq, [0, 5000])
+                        M  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
+                        z  = np.array([_find_redshift(omega, d) for d in dL])
+                        Mz = M * (1 + z)
+                        valid = Mz.max() < M_max and not np.sum(np.isnan(Mz), dtype = 'bool')
 
-                # Reconstruct observed distribution using FIGARO
-                p = Pool(25)
-                draws = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz)), Mz))
-            except Exception as e:
-                i = i + 1
-                print("An exception occurred:", e)
-                continue # skip remaining code and try again
+                    # Reconstruct observed distribution using FIGARO
+                    draws = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz)), Mz))
+                except Exception as e:
+                    i = i + 1
+                    print("An exception occurred:", e)
+                    continue # skip remaining code and try again
 
-            figaro_pdf = np.array([draw.pdf(mz) for draw in draws])
+                figaro_pdf = np.array([draw.pdf(mz) for draw in draws])
+                figaro_pdf_arr.append(figaro_pdf)
 
-            # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
-            jsd = np.array([scipy_jsd(model_pdf, np.full((len(H0), len(mz)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
+                # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
+                jsd = np.array([scipy_jsd(model_pdf, np.full((len(H0), len(mz)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
+                jsd_arr.append(jsd)
 
-            # Find H0 that minimizes JSD for each DPGMM draw
-            H0_samples = H0[np.argmin(jsd, axis=1)]
-            
-            # Compute percentage of H0 samples that are smaller than true H0
-            H0_perc.append(np.sum(H0_samples<=true_H0) / len(H0_samples))
-            break # break while loop
-        else:
-            print("Failed for 10 times")
-            sys.exit()
+                # Find H0 that minimizes JSD for each DPGMM draw
+                H0_samples = H0[np.argmin(jsd, axis=1)]
+                H0_samples_arr.append(H0_samples)
+                
+                # Compute percentage of H0 samples that are smaller than true H0
+                H0_perc = np.sum(H0_samples<=true_H0) / len(H0_samples)
+                H0_perc_arr.append(H0_perc)
+                break # break while loop
+            else:
+                print("Failed for 10 times")
+                sys.exit()
 
-    H0_perc = np.array(H0_perc)
-    np.save("H0_perc.npy", H0_perc)
+    figaro_pdf_arr = np.array(figaro_pdf_arr)
+    jsd_arr = np.array(jsd_arr)
+    H0_samples_arr = np.array(H0_samples_arr)
+    H0_perc_arr = np.array(H0_perc_arr)
+    np.savez("result.npz", figaro_pdf_arr, jsd_arr, H0_samples_arr, H0_perc_arr)
 
     # pp plot
     print("Plotting...")

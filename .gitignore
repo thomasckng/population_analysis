@@ -9,4 +9,4 @@ error
 log
 output
 submit*
-*H0_perc.npy
+*result.npz
