@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.spatial.distance import jensenshannon as scipy_jsd
 from figaro.mixture import DPGMM
@@ -8,7 +7,6 @@ from scipy.stats import norm
 from figaro.utils import rejection_sampler
 from figaro.cosmology import CosmologicalParameters
 from figaro.load import _find_redshift
-from figaro import plot_settings
 from multiprocessing import Pool
 import sys
 
@@ -103,11 +101,4 @@ if __name__ == '__main__':
     jsd_arr = np.array(jsd_arr)
     H0_samples_arr = np.array(H0_samples_arr)
     H0_perc_arr = np.array(H0_perc_arr)
-    np.savez("result.npz", figaro_pdf_arr, jsd_arr, H0_samples_arr, H0_perc_arr)
-
-    # pp plot
-    print("Plotting...")
-    plt.figure(figsize=(6,6))
-    plt.plot(np.linspace(0,1,100), np.linspace(0,1,100), "k--")
-    plt.plot(np.sort(H0_perc), np.linspace(0,1,100), "r-")
-    plt.savefig("pp_plot.pdf")
+    np.savez("result.npz", figaro_pdf_arr=figaro_pdf_arr, jsd_arr=jsd_arr, H0_samples_arr=H0_samples_arr, H0_perc_arr=H0_perc_arr)
