@@ -10,8 +10,7 @@ from figaro.load import _find_redshift
 from multiprocessing import Pool
 import sys
 
-def reconstruct_observed_distribution(samples):
-    mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
+def reconstruct_observed_distribution(mix, samples):
     return mix.density_from_samples(samples)
 
 if __name__ == '__main__':
@@ -69,10 +68,11 @@ if __name__ == '__main__':
                         M  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
                         z  = np.array([_find_redshift(omega, d) for d in dL])
                         Mz = M * (1 + z)
-                        valid = Mz.max() < M_max and not np.sum(np.isnan(Mz), dtype = 'bool')
+                        valid = Mz.max() < M_max and Mz.min() > M_min
 
                     # Reconstruct observed distribution using FIGARO
-                    draws = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz)), Mz))
+                    mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], Mz))
+                    draws = p.map(reconstruct_observed_distribution, [mix, Mz] * n_draws_figaro)
                 except Exception as e:
                     i = i + 1
                     print("An exception occurred:", e)
