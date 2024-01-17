@@ -10,3 +10,4 @@ log
 output
 submit*
 *result.npz
+*.h5
