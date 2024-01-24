@@ -9,5 +9,6 @@ error
 log
 output
 submit*
-*result.npz
+*.npz
 *.h5
+*.npy

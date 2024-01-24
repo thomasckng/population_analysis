@@ -38,4 +38,4 @@ def scipy_minimize(i):
 with Pool(50) as p:
     result = p.map(scipy_minimize, range(len(realistic_figaro)))
 
-np.save("./realistic/multi_dim_result.npy", result)
+np.save("./multi_dim_result.npy", result)
