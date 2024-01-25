@@ -35,7 +35,7 @@ def realistic_jsd(x, i):
 def scipy_minimize(i):
     return minimize(realistic_jsd, x0=[np.random.uniform(20,60), np.random.uniform(-3,-1.1)], bounds = ((20,60),(-3,-1.1)), args=(i,)).x
 
-with Pool(50) as p:
+with Pool(64) as p:
     result = p.map(scipy_minimize, range(len(realistic_figaro)))
 
 np.save("./multi_dim_result.npy", result)
