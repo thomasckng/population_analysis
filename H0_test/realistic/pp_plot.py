@@ -2,11 +2,9 @@ import numpy as np
 from tqdm import tqdm
 from scipy.spatial.distance import jensenshannon as scipy_jsd
 from figaro.mixture import DPGMM
-from figaro.utils import get_priors
+from figaro.utils import get_priors, rejection_sampler
 from scipy.stats import norm
-from figaro.utils import rejection_sampler
 from figaro.cosmology import CosmologicalParameters
-from figaro.load import _find_redshift
 from multiprocessing import Pool
 import sys
 
@@ -27,18 +25,18 @@ if __name__ == '__main__':
         return 3 * dL ** 2 / dLmax ** 3
 
     true_H0 = 40. # km/s/Mpc (Deliberately off value)
-    omega = CosmologicalParameters(true_H0/100., 0.315, 0.685, -1., 0.)
+    true_omega = CosmologicalParameters(true_H0/100., 0.315, 0.685, -1., 0., 0.)
     n_draws_samples = 2000
     norm_dist = norm()
 
     print("Preparing model pdfs...")
-    mz = np.linspace(10,200,1000)
+    mz = np.linspace(10,200,2000)
     dL = np.linspace(10,5000,500)
 
     H0 = np.linspace(20,60,500)
 
     def luminosity_distance_to_redshift(distance, H0s):
-        return np.array([_find_redshift(CosmologicalParameters(H0/100, 0.315, 0.685, -1, 0), distance) for H0 in H0s])
+        return np.array([CosmologicalParameters(H0/100, 0.315, 0.685, -1, 0, 0.).Redshift(distance) for H0 in H0s])
 
     z = luminosity_distance_to_redshift(dL, H0)
 
@@ -57,7 +55,7 @@ if __name__ == '__main__':
     jsd_arr = []
     H0_samples_arr = []
     H0_perc_arr = []
-    with Pool(50) as p:
+    with Pool(64) as p:
         for i in tqdm(range(100)):
             i = 0
             while i < 10:
@@ -65,24 +63,29 @@ if __name__ == '__main__':
                     # Generate samples from source distribution
                     valid = False
                     while not valid:
-                        dL = rejection_sampler(n_draws_samples, dLsq, [0, 5000])
-                        M  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
-                        z  = np.array([_find_redshift(omega, d) for d in dL])
-                        Mz = M * (1 + z)
-                        valid = Mz.max() < M_max and Mz.min() > M_min
+                        dL_sample = rejection_sampler(n_draws_samples, dLsq, [0, 5000])
+                        M_sample  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
+                        z_sample  = np.array([true_omega.Redshift(d) for d in dL_sample])
+                        Mz_sample = M_sample * (1 + z_sample)
+                        valid = Mz_sample.max() < M_max and Mz_sample.min() > M_min
 
                     # Reconstruct observed distribution using FIGARO
-                    draws = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz)), Mz))
+                    draws = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz_sample)), Mz_sample))
                 except Exception as e:
                     i = i + 1
                     print("An exception occurred:", e)
                     continue # skip remaining code and try again
 
-                figaro_pdf = np.array([draw.pdf(mz) for draw in draws])
+                # Mask out mz where there is no sample
+                mask = mz <= np.max(Mz_sample) * 1.05 
+                mz_short = mz[mask]
+                model_pdf_short = model_pdf[mask]
+
+                figaro_pdf = np.array([draw.pdf(mz_short) for draw in draws])
                 figaro_pdf_arr.append(figaro_pdf)
 
                 # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
-                jsd = np.array([scipy_jsd(model_pdf, np.full((len(H0), len(mz)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
+                jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
                 jsd_arr.append(jsd)
 
                 # Find H0 that minimizes JSD for each DPGMM draw
