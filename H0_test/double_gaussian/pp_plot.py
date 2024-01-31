@@ -8,6 +8,7 @@ from figaro.utils import rejection_sampler
 from figaro.cosmology import CosmologicalParameters
 from multiprocessing import Pool
 import sys
+import pickle
 
 def reconstruct_observed_distribution(samples):
     mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
@@ -107,7 +108,8 @@ if __name__ == '__main__':
                 print("Failed for 10 times")
                 sys.exit()
 
-    figaro_pdf_arr = np.array(figaro_pdf_arr)
+    with open("figaro_pdf_arr.pkl", "wb") as f:
+        pickle.dump(figaro_pdf_arr, f)
     jsd_arr = np.array(jsd_arr)
     H0_samples_arr = np.array(H0_samples_arr)
     H0_perc_arr = np.array(H0_perc_arr)
