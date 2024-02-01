@@ -1,4 +1,5 @@
 import numpy as np
+from np.random import uniform
 from tqdm import tqdm
 from scipy.spatial.distance import jensenshannon as jsd
 from scipy.optimize import minimize
@@ -22,14 +23,16 @@ def realistic_jsd(x, i):
     z = CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).Redshift(dL)
     m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
     
-    p_realistic = np.einsum("ij, j -> ij", PLpeak(m, mu=x[1]), DLsq(dL))
+    p_realistic = np.einsum("ij, j -> ij", PLpeak(m, alpha=x[1], mu=x[2], sigma=x[3], w=x[4]), DLsq(dL))
     p_realistic = np.trapz(p_realistic, dL, axis=1)
     p_realistic = p_realistic/np.trapz(p_realistic, mz, axis=0)
 
     return jsd(p_realistic, realistic_figaro[i])
 
 def scipy_minimize(i):
-    return minimize(realistic_jsd, x0=[np.random.uniform(20,60), np.random.uniform(10,50)], bounds = ((20,60),(10,50)), args=(i,)).x
+    return minimize(realistic_jsd,
+                    x0=[uniform(20,60), uniform(-3,-1.1), uniform(10,50), uniform(0.01,10), uniform(0,1)],
+                    bounds = ((20,60),(-3,-1.1),(10,50),(0.01,10),(0,1)), args=(i,)).x
 
 if __name__ == '__main__':
     true_H0 = 40. # km/s/Mpc (Deliberately off value)
