@@ -1,5 +1,5 @@
 import numpy as np
-from np.random import uniform
+from numpy.random import uniform
 from tqdm import tqdm
 from scipy.spatial.distance import jensenshannon as jsd
 from scipy.optimize import minimize
