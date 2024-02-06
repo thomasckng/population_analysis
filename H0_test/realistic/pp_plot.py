@@ -8,6 +8,7 @@ from figaro.cosmology import CosmologicalParameters
 from multiprocessing import Pool
 import sys
 import pickle
+from numba import njit
 
 def reconstruct_observed_distribution(samples):
     mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
@@ -15,13 +16,41 @@ def reconstruct_observed_distribution(samples):
 
 if __name__ == '__main__':
     # Mass distribution
-    def PLpeak(m, alpha = -2., mmin = 5., mmax = 70., mu = 30., sigma = 4., w = 0.2):
-        norm_pl = (1 - alpha) / (mmin ** (alpha + 1) - mmax ** (alpha + 1))
-        pl      = norm_pl * m ** alpha
-        peak    = np.exp(-0.5 * ((m - mu) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
-        return w * pl + (1 - w) * peak
+    @njit
+    def truncated_powerlaw(m, alpha, mmin, mmax):
+        p = m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha))
+        p[m < mmin] = 0.
+        p[m > mmax] = 0.
+        return p
+
+    @njit
+    def smoothing(m, mmin, delta):
+        p = np.zeros(m.shape, dtype = np.float64)
+        p[m > mmin] = 1./(np.exp(delta/(m[m>mmin]-mmin) + delta/(m[m>mmin]-mmin-delta))+1)
+        p[m >= mmin + delta] = 1.
+        return p
+
+    @njit
+    def powerlaw_unnorm(m, alpha, mmin, mmax, delta):
+        return truncated_powerlaw(m, alpha, mmin, mmax)*smoothing(m, mmin, delta)
+        
+    @njit
+    def powerlaw(m, alpha, mmin, mmax, delta):
+        x  = np.linspace(mmin, mmax, 1000)
+        dx = x[1]-x[0]
+        n  = np.sum(powerlaw_unnorm(x, alpha, mmin, mmax, delta)*dx)
+        return powerlaw_unnorm(m, alpha, mmin, mmax, delta)/n
+
+    @njit
+    def peak(m, mu, sigma):
+        return np.exp(-0.5*(m-mu)**2/sigma**2)/(np.sqrt(2*np.pi)*sigma)
+
+    @njit
+    def plpeak(m, alpha=3.5, mmin=5, mmax=90, delta=5, mu=35, sigma=5, w=0.2):
+        return (1.-w)*powerlaw(m, alpha, mmin, mmax, delta) + w*peak(m, mu, sigma)
 
     # dL distribution
+    @njit
     def dLsq(dL, dLmax = 5000):
         return 3 * dL ** 2 / dLmax ** 3
 
@@ -31,7 +60,7 @@ if __name__ == '__main__':
     norm_dist = norm()
 
     print("Preparing model pdfs...")
-    mz = np.linspace(10,200,2000)
+    mz = np.linspace(20,200,2000)
     dL = np.linspace(10,5000,500)
 
     H0 = np.linspace(20,60,500)
@@ -44,7 +73,7 @@ if __name__ == '__main__':
     m = np.einsum("i, jk -> ikj", mz, np.reciprocal(1+z))
 
     # model mz pdf for each H0
-    model_pdf = np.trapz(np.einsum("ijk, j -> ijk", PLpeak(m), dLsq(dL)), dL, axis=1)
+    model_pdf = np.trapz(np.einsum("ijk, j -> ijk", plpeak(m), dLsq(dL)), dL, axis=1)
     model_pdf = model_pdf / np.trapz(model_pdf, mz, axis=0)
 
     print("Computing pp plot...")
@@ -64,8 +93,8 @@ if __name__ == '__main__':
                     # Generate samples from source distribution
                     valid = False
                     while not valid:
-                        dL_sample = rejection_sampler(n_draws_samples, dLsq, [0, 5000])
-                        M_sample  = rejection_sampler(n_draws_samples, PLpeak, [5,70])
+                        dL_sample = rejection_sampler(n_draws_samples, dLsq, [0,5000])
+                        M_sample  = rejection_sampler(n_draws_samples, plpeak, [0,200])
                         z_sample  = np.array([true_omega.Redshift(d) for d in dL_sample])
                         Mz_sample = M_sample * (1 + z_sample)
                         valid = Mz_sample.max() < M_max and Mz_sample.min() > M_min
@@ -78,7 +107,7 @@ if __name__ == '__main__':
                     continue # skip remaining code and try again
 
                 # Mask out mz where there is no sample
-                mask = mz <= np.max(Mz_sample) * 1.05 
+                mask = mz <= np.max(Mz_sample) and mz >= np.min(Mz_sample)
                 mz_short = mz[mask]
                 model_pdf_short = model_pdf[mask]
 
