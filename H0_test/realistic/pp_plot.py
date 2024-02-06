@@ -135,4 +135,4 @@ if __name__ == '__main__':
     jsd_arr = np.array(jsd_arr)
     H0_samples_arr = np.array(H0_samples_arr)
     H0_perc_arr = np.array(H0_perc_arr)
-    np.savez("pp_plot_result.npz", jsd_arr=jsd_arr, H0_samples_arr=H0_samples_arr, H0_perc_arr=H0_perc_arr)
+    np.savez("result_pp_plot.npz", jsd_arr=jsd_arr, H0_samples_arr=H0_samples_arr, H0_perc_arr=H0_perc_arr)
