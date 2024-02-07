@@ -10,43 +10,47 @@ from multiprocessing import Pool
 from numba import njit
 
 # Mass distribution
-@njit
+# @njit
 def truncated_powerlaw(m, alpha, mmin, mmax):
     p = m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha))
     p[m < mmin] = 0.
     p[m > mmax] = 0.
     return p
 
-@njit
+# @njit
 def smoothing(m, mmin, delta):
     p = np.zeros(m.shape, dtype = np.float64)
     p[m > mmin] = 1./(np.exp(delta/(m[m>mmin]-mmin) + delta/(m[m>mmin]-mmin-delta))+1)
     p[m >= mmin + delta] = 1.
     return p
 
-@njit
+# @njit
 def powerlaw_unnorm(m, alpha, mmin, mmax, delta):
     return truncated_powerlaw(m, alpha, mmin, mmax)*smoothing(m, mmin, delta)
     
-@njit
+# @njit
 def powerlaw(m, alpha, mmin, mmax, delta):
     x  = np.linspace(mmin, mmax, 1000)
     dx = x[1]-x[0]
     n  = np.sum(powerlaw_unnorm(x, alpha, mmin, mmax, delta)*dx)
     return powerlaw_unnorm(m, alpha, mmin, mmax, delta)/n
 
-@njit
+# @njit
 def peak(m, mu, sigma):
     return np.exp(-0.5*(m-mu)**2/sigma**2)/(np.sqrt(2*np.pi)*sigma)
 
-@njit
+# @njit
 def plpeak(m, alpha=3.5, mmin=5, mmax=90, delta=5, mu=35, sigma=5, w=0.2):
     return (1.-w)*powerlaw(m, alpha, mmin, mmax, delta) + w*peak(m, mu, sigma)
 
 # dL distributions
-@njit
+# @njit
 def DLsq(DL, DLmax = 5000):
     return 3*DL**2/DLmax**3
+
+def reconstruct_observed_distribution(samples):
+    mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
+    return mix.density_from_samples(samples)
 
 def realistic_jsd(x, i):
     z = CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).Redshift(dL)
@@ -83,8 +87,9 @@ if __name__ == '__main__':
     mz = np.linspace(np.min(Mz_sample),np.max(Mz_sample),1000)
     dL = np.linspace(10,5000,500)
 
-    mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], Mz_sample))
-    realistic_figaro = np.array([mix.density_from_samples(Mz_sample) for _ in tqdm(range(n_draws_figaro))])
+    with Pool(64) as p:
+        realistic_figaro = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz_sample)), Mz_sample))
+
     realistic_figaro = np.array([realistic_figaro[i].pdf(mz) for i in range(len(realistic_figaro))])
 
     with Pool(64) as p:
