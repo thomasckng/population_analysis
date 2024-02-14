@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.random import uniform
-from tqdm import tqdm
 from scipy.spatial.distance import jensenshannon as jsd
 from scipy.optimize import minimize
 from figaro.mixture import DPGMM
@@ -43,22 +42,24 @@ if __name__ == '__main__':
     M_max = 200
 
     # Generate samples from source distribution
+    print("Generating samples from source distribution")
     valid = False
     while not valid:
         dL_sample = rejection_sampler(n_draws_samples, DLsq, [0,5000])
         M_sample  = rejection_sampler(n_draws_samples, plpeak, [20,200])
         z_sample  = np.array([CosmologicalParameters(true_H0/100., 0.315, 0.685, -1., 0., 0.).Redshift(d) for d in dL_sample])
         Mz_sample = M_sample * (1 + z_sample)
-        valid = Mz_sample.max() < M_max and Mz_sample.min() > 20 # prevent overflow with Mz > 20
+        valid = Mz_sample.max() < M_max and Mz_sample.min() > M_min
 
     mz = np.linspace(np.min(Mz_sample),np.max(Mz_sample),1000)
     dL = np.linspace(10,5000,500)
 
+    print("Reconstructing observed distribution")
     with Pool(64) as p:
         realistic_figaro = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz_sample)), Mz_sample))
-
     realistic_figaro = np.array([realistic_figaro[i].pdf(mz) for i in range(len(realistic_figaro))])
 
+    print("Minimizing JSD")
     with Pool(64) as p:
         result = p.map(scipy_minimize, range(len(realistic_figaro)))
 
