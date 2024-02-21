@@ -27,8 +27,8 @@ if __name__ == '__main__':
     norm_dist = norm()
 
     print("Preparing model pdfs...")
-    mz = np.linspace(20,200,2000)
-    dL = np.linspace(10,5000,500)
+    mz = np.linspace(1,200,2000)
+    dL = np.linspace(1,5000,500)
 
     H0 = np.linspace(20,60,500)
 
@@ -60,8 +60,8 @@ if __name__ == '__main__':
                     # Generate samples from source distribution
                     valid = False
                     while not valid:
-                        dL_sample = rejection_sampler(n_draws_samples, dLsq, [0,5000])
-                        M_sample  = rejection_sampler(n_draws_samples, plpeak, [0,200])
+                        dL_sample = rejection_sampler(n_draws_samples, dLsq, [1,5000])
+                        M_sample  = rejection_sampler(n_draws_samples, plpeak, [1,200])
                         z_sample  = np.array([true_omega.Redshift(d) for d in dL_sample])
                         Mz_sample = M_sample * (1 + z_sample)
                         valid = Mz_sample.max() < M_max and Mz_sample.min() > M_min

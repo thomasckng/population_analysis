@@ -45,8 +45,8 @@ if __name__ == '__main__':
     print("Generating samples from source distribution")
     valid = False
     while not valid:
-        dL_sample = rejection_sampler(n_draws_samples, DLsq, [0,5000])
-        M_sample  = rejection_sampler(n_draws_samples, plpeak, [20,200])
+        dL_sample = rejection_sampler(n_draws_samples, DLsq, [1,5000])
+        M_sample  = rejection_sampler(n_draws_samples, plpeak, [1,200])
         z_sample  = np.array([CosmologicalParameters(true_H0/100., 0.315, 0.685, -1., 0., 0.).Redshift(d) for d in dL_sample])
         Mz_sample = M_sample * (1 + z_sample)
         valid = Mz_sample.max() < M_max and Mz_sample.min() > M_min
@@ -57,10 +57,9 @@ if __name__ == '__main__':
     print("Reconstructing observed distribution")
     with Pool(64) as p:
         realistic_figaro = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz_sample)), Mz_sample))
-    realistic_figaro = np.array([realistic_figaro[i].pdf(mz) for i in range(len(realistic_figaro))])
+        realistic_figaro = np.array([realistic_figaro[i].pdf(mz) for i in range(len(realistic_figaro))])
 
-    print("Minimizing JSD")
-    with Pool(64) as p:
+        print("Minimizing JSD")
         result = p.map(scipy_minimize, range(len(realistic_figaro)))
 
     np.savez("result_H0_mu.npz", result = result, Mz_sample = Mz_sample, realistic_figaro = realistic_figaro)
