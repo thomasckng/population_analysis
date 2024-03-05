@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 H0_samples_arr.append(H0_samples)
                 
                 # Compute percentage of H0 samples that are smaller than true H0
-                H0_perc = np.sum(H0_samples<=true_H0) / len(H0_samples)
+                H0_perc = np.sum(H0_samples<=true_H0[i]) / len(H0_samples)
                 H0_perc_arr.append(H0_perc)
                 break # break while loop
             else:
