@@ -5,10 +5,7 @@ __pycache__
 *.pdf
 *.pkl
 prob_density.txt
-error
-log
-output
-submit*
+condor/
 *.npz
 *.h5
 *.npy
