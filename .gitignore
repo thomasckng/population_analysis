@@ -1,11 +1,7 @@
 .DS_Store
 inference
 __pycache__
-.ipynb_checkpoints/
-*.pdf
-*.pkl
-prob_density.txt
-condor/
-*.npz
-*.h5
-*.npy
+.ipynb_checkpoints
+condor
+result
+grid.npz
