@@ -27,8 +27,7 @@ elif sys.argv[1] == "alpha":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, alpha=x[1]), DLsq(dL))
-        p = np.sum(p*(dL[1]-dL[0]), axis=1)
-        p = p/np.sum(p*(mz[1]-mz[0]))
+        p = np.sum(p, axis=1) # delta_dL and normalization of mz is included in scipy_jsd
 
         return scipy_jsd(p, pdf_figaro[i])
 elif sys.argv[1] == "mu":
@@ -39,8 +38,7 @@ elif sys.argv[1] == "mu":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, mu=x[1]), DLsq(dL))
-        p = np.sum(p*(dL[1]-dL[0]), axis=1)
-        p = p/np.sum(p*(mz[1]-mz[0]))
+        p = np.sum(p, axis=1) # delta_dL and normalization of mz is included in scipy_jsd
 
         return scipy_jsd(p, pdf_figaro[i])
 elif sys.argv[1] == "5":
@@ -51,8 +49,7 @@ elif sys.argv[1] == "5":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, alpha=x[1], mu=x[2], sigma=x[3], w=x[4]), DLsq(dL))
-        p = np.sum(p*(dL[1]-dL[0]), axis=1)
-        p = p/np.sum(p*(mz[1]-mz[0]))
+        p = np.sum(p, axis=1) # delta_dL and normalization of mz is included in scipy_jsd
 
         return scipy_jsd(p, pdf_figaro[i])
 elif sys.argv[1] == "8":
@@ -63,8 +60,7 @@ elif sys.argv[1] == "8":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, alpha=x[1], mu=x[2], sigma=x[3], w=x[4], mmin=x[5], mmax=x[6], delta=x[7]), DLsq(dL))
-        p = np.sum(p*(dL[1]-dL[0]), axis=1)
-        p = p/np.sum(p*(mz[1]-mz[0]))
+        p = np.sum(p, axis=1) # delta_dL and normalization of mz is included in scipy_jsd
 
         return scipy_jsd(p, pdf_figaro[i])
 else:
