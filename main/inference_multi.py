@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.random import uniform as uni
 from scipy.spatial.distance import jensenshannon as scipy_jsd
-from scipy.optimize import minimize as scipy_minimize
 from figaro.mixture import DPGMM
 from figaro.utils import rejection_sampler, get_priors
 from figaro.cosmology import CosmologicalParameters
@@ -28,8 +27,8 @@ elif sys.argv[1] == "alpha":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, alpha=x[1]), DLsq(dL))
-        p = np.trapz(p, dL, axis=1)
-        p = p/np.trapz(p, mz, axis=0)
+        p = np.sum(p*(dL[1]-dL[0]), axis=1)
+        p = p/np.sum(p*(mz[1]-mz[0]))
 
         return scipy_jsd(p, pdf_figaro[i])
 elif sys.argv[1] == "mu":
@@ -40,8 +39,8 @@ elif sys.argv[1] == "mu":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, mu=x[1]), DLsq(dL))
-        p = np.trapz(p, dL, axis=1)
-        p = p/np.trapz(p, mz, axis=0)
+        p = np.sum(p*(dL[1]-dL[0]), axis=1)
+        p = p/np.sum(p*(mz[1]-mz[0]))
 
         return scipy_jsd(p, pdf_figaro[i])
 elif sys.argv[1] == "5":
@@ -52,8 +51,8 @@ elif sys.argv[1] == "5":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, alpha=x[1], mu=x[2], sigma=x[3], w=x[4]), DLsq(dL))
-        p = np.trapz(p, dL, axis=1)
-        p = p/np.trapz(p, mz, axis=0)
+        p = np.sum(p*(dL[1]-dL[0]), axis=1)
+        p = p/np.sum(p*(mz[1]-mz[0]))
 
         return scipy_jsd(p, pdf_figaro[i])
 elif sys.argv[1] == "8":
@@ -64,8 +63,8 @@ elif sys.argv[1] == "8":
         m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
         
         p = np.einsum("ij, j -> ij", plpeak(m, alpha=x[1], mu=x[2], sigma=x[3], w=x[4], mmin=x[5], mmax=x[6], delta=x[7]), DLsq(dL))
-        p = np.trapz(p, dL, axis=1)
-        p = p/np.trapz(p, mz, axis=0)
+        p = np.sum(p*(dL[1]-dL[0]), axis=1)
+        p = p/np.sum(p*(mz[1]-mz[0]))
 
         return scipy_jsd(p, pdf_figaro[i])
 else:
@@ -74,12 +73,17 @@ else:
 
 if sys.argv[2] in ["Nelder-Mead", "Powell", "L-BFGS-B", "TNC", "COBYLA", "SLSQP", "trust-constr"]:
     method = sys.argv[2]
+    from scipy.optimize import minimize as scipy_minimize
+    def minimize(i):
+        return scipy_minimize(jsd, x0=x0, bounds=bounds, args=(i,), method=method).x
+elif sys.argv[2] == "CMA-ES":
+    import cma
+    def minimize(i):
+        return cma.fmin2(jsd, x0, 10, {'bounds': np.array(bounds).T}, args=(i,))[0]
 else:
     print("Invalid argument!")
     sys.exit(1)
 
-def minimize(i):
-    return scipy_minimize(jsd, x0=x0, bounds=bounds, args=(i,), method=method).x
 
 n_pool = 32
 
@@ -113,5 +117,5 @@ with Pool(n_pool) as p:
     result = p.map(minimize, range(len(pdf_figaro)))
 
 print("Saving results...")
-np.savez("result_"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, Mz_sample=Mz_sample, pdf_figaro=pdf_figaro)
+np.savez("./result/result_"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, Mz_sample=Mz_sample, pdf_figaro=pdf_figaro)
 print("Done!")

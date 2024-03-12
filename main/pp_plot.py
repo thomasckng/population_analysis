@@ -103,11 +103,11 @@ for _ in tqdm(range(n_runs)):
 
 print("Saving results...")
 true_H0_arr = np.array(true_H0_arr)
-with open("figaro_pdf_arr.pkl", "wb") as f:
+with open("./result/figaro_pdf_arr.pkl", "wb") as f:
     pickle.dump(figaro_pdf_arr, f)
 jsd_arr = np.array(jsd_arr)
 H0_samples_arr = np.array(H0_samples_arr)
 H0_perc_arr = np.array(H0_perc_arr)
-np.savez("result_pp_plot.npz", true_H0_arr=true_H0_arr, jsd_arr=jsd_arr, H0_samples_arr=H0_samples_arr, H0_perc_arr=H0_perc_arr)
+np.savez("./result/result_pp_plot.npz", true_H0_arr=true_H0_arr, jsd_arr=jsd_arr, H0_samples_arr=H0_samples_arr, H0_perc_arr=H0_perc_arr)
 
 print("Done!")
