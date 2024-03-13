@@ -76,30 +76,30 @@ for _ in tqdm(range(n_runs)):
             i = i + 1
             print("An exception occurred:", e)
             continue # skip remaining code and try again
-
-        # Mask out mz where there is no sample
-        mask = [mz[k] <= np.max(Mz_sample) and mz[k] >= np.min(Mz_sample) for k in range(len(mz))]
-        mz_short = mz[mask]
-        model_pdf_short = model_pdf[mask]
-
-        figaro_pdf = np.array([draw.pdf(mz_short) for draw in draws])
-        figaro_pdf_arr.append(figaro_pdf)
-
-        # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
-        jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
-        jsd_arr.append(jsd)
-
-        # Find H0 that minimizes JSD for each DPGMM draw
-        H0_samples = H0[np.argmin(jsd, axis=1)]
-        H0_samples_arr.append(H0_samples)
-        
-        # Compute percentage of H0 samples that are smaller than true H0
-        H0_perc = np.sum(H0_samples<=true_H0) / len(H0_samples)
-        H0_perc_arr.append(H0_perc)
         break # break while loop
     else:
         print("Failed for 10 times")
         sys.exit()
+
+# Mask out mz where there is no sample
+mask = [mz[k] <= np.max(Mz_sample) and mz[k] >= np.min(Mz_sample) for k in range(len(mz))]
+mz_short = mz[mask]
+model_pdf_short = model_pdf[mask]
+
+figaro_pdf = np.array([draw.pdf(mz_short) for draw in draws])
+figaro_pdf_arr.append(figaro_pdf)
+
+# Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
+jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
+jsd_arr.append(jsd)
+
+# Find H0 that minimizes JSD for each DPGMM draw
+H0_samples = H0[np.argmin(jsd, axis=1)]
+H0_samples_arr.append(H0_samples)
+
+# Compute percentage of H0 samples that are smaller than true H0
+H0_perc = np.sum(H0_samples<=true_H0) / len(H0_samples)
+H0_perc_arr.append(H0_perc)
 
 print("Saving results...")
 true_H0_arr = np.array(true_H0_arr)

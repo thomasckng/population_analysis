@@ -6,3 +6,4 @@ condor
 result
 grid.npz
 outcmaes
+*.log
