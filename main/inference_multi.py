@@ -36,6 +36,11 @@ elif sys.argv[1] == "5":
     bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1))
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3])
+elif sys.argv[1] == "6":
+    x0 = [uni(10,100), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1), uni(0.01,10)]
+    bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,10))
+    def plp(m, x):
+        return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3], delta=x[4])
 elif sys.argv[1] == "8":
     x0 = [uni(10,100), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1), uni(0.01,10), uni(50,200), uni(0.01,10)]
     bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,10), (50,200), (0.01,10))
