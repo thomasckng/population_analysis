@@ -88,7 +88,82 @@ elif sys.argv[2] == "PSO":
 
     def minimize(i):
         return optimizer.optimize(jsd_ps, iters=100, i=i)[1]
-    
+
+elif sys.argv[2] == "Metropolis":
+
+    from scipy.stats import uniform, multivariate_normal as mn
+    class Metropolis:
+        """
+        Metropolis minimization algorithm. A new point is accepted if and only if p_new < p_old.
+        
+        Arguments:
+            np.ndarray bounds: boundaries for the parameters. Formatted as [[xmin, xmax],[ymin,ymax],...]
+            callable func:     function to minimize
+            int n_burnin:      number of points before drawing a sample
+            np.ndarray dx:     std of the multivariate_normal distribution to propose a new point
+        """
+        def __init__(self, bounds,
+                        func,
+                        burnin = 1e4,
+                        dx     = None
+                        ):
+            self.bounds   = np.atleast_2d(bounds)
+            self.func      = func
+            self.n_dim    = len(bounds)
+            if dx is not None:
+                self.dx   = np.atleast_1d(dx)
+            else:
+                self.dx   = np.diff(self.bounds, axis = 1).flatten()/100
+            self.proposal = mn(np.zeros(self.n_dim), np.identity(self.n_dim)*self.dx**2)
+            self.initial  = uniform(self.bounds[:,0], self.bounds[:,1])
+            self.burnin   = int(burnin)
+        
+        def _propose_point(self, x):
+            """
+            Propose a new point within the boundaries
+            
+            Arguments:
+                np.ndarray x: old point
+            
+            Return:
+                np.ndarray: new point
+            """
+            y = x + self.proposal.rvs()
+            while not (np.prod(self.bounds[:,0] <= y) & np.prod(y <= self.bounds[:,1])):
+                y = x + self.proposal.rvs()
+            return y
+        
+        def _sample_point(self, args = ()):
+            """
+            Sample a new point
+            
+            Return:
+                np.ndarray: new point
+            """
+            x = self.initial.rvs()
+            for _ in range(self.burnin):
+                y = self._propose_point(x)
+                if self.func(y, args) < self.func(x, args):
+                    x = y
+            return x
+        
+        def rvs(self, size = 1, args = ()):
+            """
+            Sample points
+            
+            Arguments:
+                int size: number of points to draw
+            
+            Return:
+                np.ndarray: array of samples
+            """
+            return np.array([self._sample_point(args) for _ in range(int(size))])
+
+    optimizer = Metropolis(np.array(bounds), jsd, burnin=1e3)
+
+    def minimize(i):
+        return optimizer.rvs(args=(i,))[0]
+
 else:
     print("Invalid argument!")
     sys.exit(1)
