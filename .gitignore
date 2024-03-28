@@ -2,8 +2,9 @@
 inference
 __pycache__
 .ipynb_checkpoints
-condor
 result
 grid.npz
 outcmaes
 *.log
+*submit*
+

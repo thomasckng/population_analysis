@@ -37,8 +37,8 @@ elif sys.argv[1] == "5":
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3])
 elif sys.argv[1] == "6":
-    x0 = [uni(10,100), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1), uni(0.01,10)]
-    bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,10))
+    x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1), uni(0.01,15)]
+    bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,15))
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3], delta=x[4])
 elif sys.argv[1] == "8":
@@ -68,6 +68,7 @@ if sys.argv[2] in ["Nelder-Mead", "Powell", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"
 
     def minimize(i):
         return scipy_minimize(jsd, x0=x0, bounds=bounds, args=(i,), method=method).x
+        print('Done!')
     
 elif sys.argv[2] == "CMA-ES":
 
@@ -75,6 +76,7 @@ elif sys.argv[2] == "CMA-ES":
 
     def minimize(i):
         return cma.fmin2(jsd, x0, 1, {'bounds': np.array(bounds).T.tolist(), 'CMA_stds': np.array(bounds).T[1]/4}, args=(i,))[0]
+        print('Done!')
     
 elif sys.argv[2] == "PSO":
 
@@ -88,6 +90,7 @@ elif sys.argv[2] == "PSO":
 
     def minimize(i):
         return optimizer.optimize(jsd_ps, iters=100, i=i)[1]
+        print('Done!')
 
 elif sys.argv[2] == "Metropolis":
 
@@ -163,13 +166,14 @@ elif sys.argv[2] == "Metropolis":
 
     def minimize(i):
         return optimizer.rvs(args=(i,))[0]
+        print('Done!')
 
 else:
     print("Invalid argument!")
     sys.exit(1)
 
 
-n_pool = 16
+n_pool = 64
 
 print("Generating samples from source distribution...")
 true_H0 = 70. # km/s/Mpc
