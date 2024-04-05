@@ -5,6 +5,6 @@ __pycache__
 result
 grid.npz
 outcmaes
-*.log
+*.log*
 *submit*
 condor
