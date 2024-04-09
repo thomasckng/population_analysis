@@ -31,6 +31,11 @@ elif sys.argv[1] == "mu":
     bounds = ((10,100), (10,50))
     def plp(m, x):
         return plpeak(m, mu=x[0])
+elif sys.argv[1] == "4":
+    x0 = [uni(10,200), uni(10,50), uni(0.01,10), uni(0.01,15)]
+    bounds = ((10,200), (10,50), (0.01,10), (0.01,15))
+    def plp(m, x):
+        return plpeak(m, mu=x[0], sigma=x[1], delta=x[2])
 elif sys.argv[1] == "5":
     x0 = [uni(10,100), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1)]
     bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1))
