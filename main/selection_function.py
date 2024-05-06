@@ -16,7 +16,7 @@
 # Selection function by reading from a pkl file
 import dill
 
-with open('/Users/thomas.ng/Documents/GitHub/population_analysis/main/selfunc_detframe.pkl', 'rb') as f:
+with open('selfunc_detframe.pkl', 'rb') as f:
     selfunc_interp = dill.load(f)
 
 def selection_function(x):
