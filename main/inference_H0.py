@@ -1,51 +1,73 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import jensenshannon as scipy_jsd
 from figaro.cosmology import CosmologicalParameters
+from scipy.spatial.distance import jensenshannon as scipy_jsd
 from figaro.load import load_density
-from figaro.marginal import marginalise
-from multiprocessing import Pool
+import os
 
+# Mass distribution
 from population_models.mass import plpeak
 
-outdir = "/Users/thomas.ng/Documents/GitHub/population_analysis/main/hierarchical_SE_test_3"
+# Redshift distribution
+def p_z(z, H0):
+    return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
+
+label = "hierarchical_SE_test"
+outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
 
 print("Preparing model pdfs...")
-mz = np.linspace(0,200,1000)
-H0 = np.linspace(20,120,1000)
-z = np.linspace(0,1,1000)
-m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
+try:
+    mz, H0, z, m, model_pdf = np.load(outdir+"/../model_pdf.npz").values()
+except:
+    mz = np.linspace(1,200,900)
+    H0 = np.linspace(20,120,1000)
+    z = np.linspace(0.001,2,800)
+    m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 
-def dVdz(H0):
-    return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)
+    # model mz pdf for each H0
+    model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [p_z(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
 
-# model mz pdf for each H0
-model_pdf = np.sum(np.einsum("ij, kj -> ijk", plpeak(m), np.einsum("ij, j -> ij", np.array([dVdz(i) for i in H0]), np.exp(-z/0.1)*np.reciprocal(1+z)))*(z[1]-z[0]), axis=1)
+    from selection_function import selection_function
+    SE_grid = np.array([selection_function(mz, CosmologicalParameters(i/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) for i in H0]) # shape = (len(H0), len(mz), len(z))
+    model_pdf = np.einsum("ijk, kji -> ijk", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
 
-print("Reading draws...")
+    model_pdf = np.trapz(model_pdf, z, axis=1) # shape = (len(mz), len(H0))
 
-draws = load_density(outdir+"/draws/draws_intrinsic_hierarchical_SE_test_3.json")
+    np.savez(outdir+"/../model_pdf.npz", mz=mz, H0=H0, z=z, m=m, model_pdf=model_pdf)
 
-print("Infering H0...")
+print("Reading bounds and draws...")
+draws = load_density(outdir+"/draws/draws_observed_"+label+".json")
 
 bounds = np.loadtxt(outdir+"/jsd_bounds.txt")
-bounds = np.atleast_2d([[10,80]])
 
+print("Preparing H0 inference...")
 # Mask out mz where there is no sample
-mask = [mz[k] <= bounds[0,1] and mz[k] >= bounds[0,0] for k in range(len(mz))]
-mz_short = mz[mask]
-model_pdf_short = model_pdf[mask]
+_mask = [mz[k] <= bounds[1] and mz[k] >= bounds[0] for k in range(len(mz))]
+mz_short = mz[_mask]
+model_pdf_short = model_pdf[_mask]
 
-mass_draws = marginalise(draws, [1])
-figaro_pdf = np.array([draw.pdf(mz_short) for draw in mass_draws])
+figaro_pdf = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, len(mz_short))
 
+from figaro.plot import plot_1d_dist
+
+fig = plot_1d_dist(mz_short, figaro_pdf, save=False)
+ax = fig.axes[0]
+fig, ax = plt.subplots()
+
+for i in range(0, len(H0), len(H0)//10):
+    ax.plot(mz, model_pdf[:,i]/np.trapz(model_pdf[:,i], mz), label=f"H0={H0[i]:.1f}")
+ax.legend()
+fig.savefig(outdir+"/model_pdf.pdf")
+fig.clf()
+ax.clear()
+
+print("Infering H0...")
 # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
 jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
 # Find H0 that minimizes JSD for each DPGMM draw
 H0_samples = H0[np.argmin(jsd, axis=1)]
 
 print("Saving results...")
-
 np.savetxt(outdir+"/jsds.txt", jsd)
 np.savetxt(outdir+"/H0s.txt", H0_samples)
 
