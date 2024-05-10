@@ -1,22 +1,17 @@
 import numpy as np
 from numpy.random import uniform as uni
 from scipy.spatial.distance import jensenshannon as scipy_jsd
-from figaro.mixture import DPGMM
-from figaro.utils import rejection_sampler, get_priors
+from figaro.load import load_density
 from figaro.cosmology import CosmologicalParameters
 from multiprocessing import Pool
+from selection_function import selection_function
 from population_models.mass import plpeak
 import sys
+import os
 
-# dL distributions
-def DLsq(DL, DLmax = 5000):
-    return 3*DL**2/DLmax**3
-
-
-def reconstruct_observed_distribution(samples):
-    mix = DPGMM([[M_min, M_max]], prior_pars=get_priors([[M_min, M_max]], samples))
-    return mix.density_from_samples(samples)
-
+# Redshift distribution
+def p_z(z, H0):
+    return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
 
 if len(sys.argv) < 3:
     print("Invalid number of arguments!")
@@ -56,13 +51,13 @@ else:
     sys.exit(1)
 
 def jsd(x, i):
-        z = CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).Redshift(dL)
-        m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z))
-        
-        p = np.einsum("ij, j -> ij", plp(m, x[1:]), DLsq(dL))
-        p = np.sum(p, axis=1) # delta_dL and normalization of mz is included in scipy_jsd
+        model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), p_z(z, x[0])) # shape = (len(mz), len(z))
+        SE_grid = selection_function(mz, CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) # shape = (len(mz), len(z))
+        model_pdf = np.einsum("ij, ji -> ij", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
+        model_pdf = np.trapz(model_pdf, z, axis=1) # shape = (len(mz))
+        model_pdf_short = model_pdf[_mask]
 
-        return scipy_jsd(p, pdf_figaro[i])
+        return scipy_jsd(model_pdf_short, pdf_figaro[i])
 
 
 if sys.argv[2] in ["Nelder-Mead", "Powell", "L-BFGS-B", "TNC", "COBYLA", "SLSQP", "trust-constr"]:
@@ -104,46 +99,30 @@ else:
 
 n_pool = 64
 
-print("Generating samples from source distribution...")
-true_H0 = 70. # km/s/Mpc
+label = "hierarchical_SE_test_200"
+outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
 
-n_draws_samples = 1000
-n_draws_figaro = 10000
-M_min = 0
-M_max = 200
+mz = np.linspace(1,200,900)
+H0 = np.linspace(20,120,1000)
+z = np.linspace(0.001,2,800)
+m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 
-i = 0
-while i < 10:
-    try:
-        # Generate samples from source distribution
-        valid = False
-        while not valid:
-            dL_sample = rejection_sampler(n_draws_samples, DLsq, [1,5000])
-            M_sample  = rejection_sampler(n_draws_samples, plpeak, [1,200])
-            z_sample  = CosmologicalParameters(true_H0/100., 0.315, 0.685, -1., 0., 0.).Redshift(dL_sample)
-            Mz_sample = M_sample * (1 + z_sample)
-            valid = Mz_sample.max() < M_max and Mz_sample.min() > M_min
+print("Reading bounds and draws...")
+draws = load_density(outdir+"/draws/draws_observed_"+label+".json")
 
-        print("Reconstructing observed distribution...")
-        mz = np.linspace(np.min(Mz_sample),np.max(Mz_sample),1000)
-        dL = np.linspace(10,5000,1000)
+bounds = np.loadtxt(outdir+"/jsd_bounds.txt")
 
-        with Pool(n_pool) as p:
-            pdf_figaro = p.map(reconstruct_observed_distribution, np.full((n_draws_figaro,len(Mz_sample)), Mz_sample))
-        pdf_figaro = np.array([pdf_figaro[i].pdf(mz) for i in range(len(pdf_figaro))])
-    except Exception as e:
-        i = i + 1
-        print("An exception occurred:", e)
-        continue # skip remaining code and try again
-    break # break while loop
-else:
-    print("Failed for 10 times")
-    sys.exit()
+print("Preparing inference...")
+# Mask out mz where there is no sample
+_mask = [mz[k] <= bounds[1] and mz[k] >= bounds[0] for k in range(len(mz))]
+mz_short = mz[_mask]
+
+pdf_figaro = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, len(mz_short))
 
 print("Minimizing JSD...")
 with Pool(n_pool) as p:
     result = p.map(minimize, range(len(pdf_figaro)))
 
 print("Saving results...")
-np.savez("./result/result_"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, Mz_sample=Mz_sample, pdf_figaro=pdf_figaro)
+np.savez(outdir+"/multi/"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, pdf_figaro=pdf_figaro)
 print("Done!")
