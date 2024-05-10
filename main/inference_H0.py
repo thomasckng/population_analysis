@@ -4,6 +4,7 @@ from figaro.cosmology import CosmologicalParameters
 from scipy.spatial.distance import jensenshannon as scipy_jsd
 from figaro.load import load_density
 import os
+from figaro import plot_settings
 
 # Mass distribution
 from population_models.mass import plpeak
@@ -28,7 +29,8 @@ except:
     model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [p_z(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
 
     from selection_function import selection_function
-    SE_grid = np.array([selection_function(mz, CosmologicalParameters(i/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) for i in H0]) # shape = (len(H0), len(mz), len(z))
+    from tqdm import tqdm
+    SE_grid = np.array([selection_function(mz, CosmologicalParameters(i/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) for i in tqdm(H0, desc = 'SE grid')]) # shape = (len(H0), len(mz), len(z))
     model_pdf = np.einsum("ijk, kji -> ijk", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
 
     model_pdf = np.trapz(model_pdf, z, axis=1) # shape = (len(mz), len(H0))
@@ -52,10 +54,9 @@ from figaro.plot import plot_1d_dist
 
 fig = plot_1d_dist(mz_short, figaro_pdf, save=False)
 ax = fig.axes[0]
-fig, ax = plt.subplots()
 
-for i in range(0, len(H0), len(H0)//10):
-    ax.plot(mz, model_pdf[:,i]/np.trapz(model_pdf[:,i], mz), label=f"H0={H0[i]:.1f}")
+for i in range(0, len(H0), len(H0)//4):
+    ax.plot(mz_short, model_pdf_short[:,i]/np.trapz(model_pdf_short[:,i], mz_short), label=f"H0={H0[i]:.1f}")
 ax.legend()
 fig.savefig(outdir+"/model_pdf.pdf")
 fig.clf()
@@ -72,6 +73,11 @@ np.savetxt(outdir+"/jsds.txt", jsd)
 np.savetxt(outdir+"/H0s.txt", H0_samples)
 
 plt.hist(H0_samples)
+percs = np.percentile(H0_samples, [5, 16, 50, 84, 95])
+plt.axvline(70, lw = 0.7, ls = '--', c = 'orangered', label = '$\\mathrm{Simulated}$')
+plt.axvline(percs[2], c = 'steelblue', lw=0.7, label = '$H_0 = '+str(f'{percs[2]:.1f}')+'^{+'+str(f'{percs[3]-percs[2]:.1f}')+'}_{-'+str(f'{percs[2]-percs[1]:.1f}')+'}$')
+plt.axvspan(percs[1], percs[3], alpha=0.25, color='mediumturquoise')
+plt.axvspan(percs[0], percs[4], alpha=0.25, color='darkturquoise')
 plt.savefig(outdir+"/H0_hist.pdf")
 
 print("Done!")
