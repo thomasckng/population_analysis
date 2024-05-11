@@ -51,13 +51,13 @@ else:
     sys.exit(1)
 
 def jsd(x, i):
-        model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), p_z(z, x[0])) # shape = (len(mz), len(z))
-        SE_grid = selection_function(mz, CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) # shape = (len(mz), len(z))
-        model_pdf = np.einsum("ij, ji -> ij", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
-        model_pdf = np.trapz(model_pdf, z, axis=1) # shape = (len(mz))
-        model_pdf_short = model_pdf[_mask]
+    model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), p_z(z, x[0])) # shape = (len(mz), len(z))
+    SE_grid = selection_function(mz, CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) # shape = (len(mz), len(z))
+    model_pdf = np.einsum("ij, ji -> ij", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
+    model_pdf = np.trapz(model_pdf, z, axis=1) # shape = (len(mz))
+    model_pdf_short = model_pdf[_mask]
 
-        return scipy_jsd(model_pdf_short, pdf_figaro[i])
+    return scipy_jsd(model_pdf_short, pdf_figaro[i])
 
 
 if sys.argv[2] in ["Nelder-Mead", "Powell", "L-BFGS-B", "TNC", "COBYLA", "SLSQP", "trust-constr"]:
@@ -68,7 +68,6 @@ if sys.argv[2] in ["Nelder-Mead", "Powell", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"
 
     def minimize(i):
         return scipy_minimize(jsd, x0=x0, bounds=bounds, args=(i,), method=method).x
-        print('Done!')
     
 elif sys.argv[2] == "CMA-ES":
 
@@ -76,7 +75,6 @@ elif sys.argv[2] == "CMA-ES":
 
     def minimize(i):
         return cma.fmin2(jsd, x0, 1, {'bounds': np.array(bounds).T.tolist(), 'CMA_stds': np.array(bounds).T[1]/4}, args=(i,))[0]
-        print('Done!')
     
 elif sys.argv[2] == "PSO":
 
@@ -90,7 +88,6 @@ elif sys.argv[2] == "PSO":
 
     def minimize(i):
         return optimizer.optimize(jsd_ps, iters=100, i=i)[1]
-        print('Done!')
 
 else:
     print("Invalid argument!")
@@ -99,7 +96,7 @@ else:
 
 n_pool = 64
 
-label = "hierarchical_SE_test_200"
+label = "hierarchical_SE_test"
 outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
 
 mz = np.linspace(1,200,900)
@@ -110,11 +107,11 @@ m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 print("Reading bounds and draws...")
 draws = load_density(outdir+"/draws/draws_observed_"+label+".json")
 
-bounds = np.loadtxt(outdir+"/jsd_bounds.txt")
+jsd_bounds = np.loadtxt(outdir+"/jsd_bounds.txt")
 
 print("Preparing inference...")
 # Mask out mz where there is no sample
-_mask = [mz[k] <= bounds[1] and mz[k] >= bounds[0] for k in range(len(mz))]
+_mask = [mz[k] <= jsd_bounds[1] and mz[k] >= jsd_bounds[0] for k in range(len(mz))]
 mz_short = mz[_mask]
 
 pdf_figaro = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, len(mz_short))
@@ -124,5 +121,7 @@ with Pool(n_pool) as p:
     result = p.map(minimize, range(len(pdf_figaro)))
 
 print("Saving results...")
+if not os.path.exists(outdir+'/multi'):
+    os.makedirs(outdir+'/multi')
 np.savez(outdir+"/multi/"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, pdf_figaro=pdf_figaro)
 print("Done!")
