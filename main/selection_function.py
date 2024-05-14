@@ -17,3 +17,12 @@
 import numpy as np
 def selection_function(mz, dL):
     return 1/(1+np.exp(-(mz-50)/10))*(1/(1+np.exp((dL-1500)/100)))
+
+# # Selection function by reading from a pkl file
+# import dill
+
+# with open('selfunc_detframe.pkl', 'rb') as f:
+#     selfunc_interp = dill.load(f)
+
+# def selection_function(x):
+#     return selfunc_interp(x)
