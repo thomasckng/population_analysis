@@ -17,13 +17,13 @@ if len(sys.argv) < 3:
     print("Invalid number of arguments!")
     sys.exit(1)
 elif sys.argv[1] == "alpha":
-    x0 = [uni(10,100), uni(1.01,5)]
-    bounds = ((10,100), (1.01,5))
+    x0 = [uni(10,200), uni(1.01,5)]
+    bounds = ((10,200), (1.01,5))
     def plp(m, x):
         return plpeak(m, alpha=x[0])
 elif sys.argv[1] == "mu":
-    x0 = [uni(10,100), uni(10,50)]
-    bounds = ((10,100), (10,50))
+    x0 = [uni(10,200), uni(10,50)]
+    bounds = ((10,200), (10,50))
     def plp(m, x):
         return plpeak(m, mu=x[0])
 elif sys.argv[1] == "4":
@@ -32,8 +32,8 @@ elif sys.argv[1] == "4":
     def plp(m, x):
         return plpeak(m, mu=x[0], sigma=x[1], delta=x[2])
 elif sys.argv[1] == "5":
-    x0 = [uni(10,100), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1)]
-    bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1))
+    x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1)]
+    bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1))
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3])
 elif sys.argv[1] == "6":
@@ -41,11 +41,6 @@ elif sys.argv[1] == "6":
     bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,15))
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3], delta=x[4])
-elif sys.argv[1] == "8":
-    x0 = [uni(10,100), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1), uni(0.01,10), uni(50,200), uni(0.01,10)]
-    bounds = ((10,100), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,10), (50,200), (0.01,10))
-    def plp(m, x):
-        return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3], mmin=x[4], mmax=x[5], delta=x[6])
 else:
     print("Invalid argument!")
     sys.exit(1)
@@ -94,7 +89,7 @@ else:
     sys.exit(1)
 
 
-n_pool = 64
+n_pool = 32
 
 label = "hierarchical_SE_test"
 outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
