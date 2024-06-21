@@ -6,6 +6,7 @@ from figaro.load import load_density
 import os
 from figaro.plot import plot_1d_dist, plot_median_cr
 from figaro import plot_settings
+import sys
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -20,7 +21,13 @@ from population_models.mass import plpeak
 def p_z(z, H0):
     return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
 
-label = "GWTC-3_test"
+# Jacobian
+def jacobian(func):
+    def wrapper(z, *args):
+        return func(z, *args)/(1+z)
+    return wrapper
+
+label = sys.argv[1]
 outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
 
 print("Preparing model pdfs...")
@@ -33,7 +40,7 @@ except:
     m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 
     # model mz pdf for each H0
-    model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [p_z(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
+    model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [jacobian(p_z)(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
 
     from selection_function import selection_function
     from tqdm import tqdm
@@ -49,7 +56,6 @@ print("Reading bounds and draws...")
 draws = load_density(outdir+"/draws/draws_observed_"+label+".json")
 
 bounds = np.loadtxt(outdir+"/jsd_bounds.txt")
-bounds[0] = 5
 
 print("Preparing H0 inference...")
 # Mask out mz where there is no sample

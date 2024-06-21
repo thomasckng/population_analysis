@@ -13,7 +13,13 @@ import os
 def p_z(z, H0):
     return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
 
-if len(sys.argv) < 3:
+# Jacobian
+def jacobian(func):
+    def wrapper(z, *args):
+        return func(z, *args)/(1+z)
+    return wrapper
+
+if len(sys.argv) < 4:
     print("Invalid number of arguments!")
     sys.exit(1)
 elif sys.argv[1] == "alpha":
@@ -36,6 +42,11 @@ elif sys.argv[1] == "5":
     bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1))
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3])
+elif sys.argv[1] == "5a":
+    x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(1,10), uni(0,1)]
+    bounds = ((10,200), (1.01,5), (10,50), (1,10), (0,1))
+    def plp(m, x):
+        return plpeak(m, alpha=x[0], mu=x[1], mmin=x[2], w=x[3])
 elif sys.argv[1] == "6":
     x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1), uni(0.01,15)]
     bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1), (0.01,15))
@@ -46,9 +57,10 @@ else:
     sys.exit(1)
 
 def jsd(x, i):
-    model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), p_z(z, x[0])) # shape = (len(mz), len(z))
-    SE_grid = selection_function(mz, CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z).reshape(-1,1)) # shape = (len(mz), len(z))
-    model_pdf = np.einsum("ij, ji -> ij", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
+    model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), jacobian(p_z)(z, x[0])) # shape = (len(mz), len(z))
+    grid = np.transpose(np.meshgrid(mz, CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z))) # shape = (len(mz), len(z), 2)
+    SE_grid = selection_function(grid) # shape = (len(mz), len(z))
+    model_pdf = np.einsum("ij, ij -> ij", model_pdf, SE_grid) # shape = (len(mz), len(z))
     model_pdf = np.trapz(model_pdf, z, axis=1) # shape = (len(mz))
     model_pdf_short = model_pdf[_mask]
 
@@ -91,11 +103,11 @@ else:
 
 n_pool = 32
 
-label = "hierarchical_SE_test"
+label = sys.argv[3]
 outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
 
 mz = np.linspace(1,200,900)
-H0 = np.linspace(20,120,1000)
+H0 = np.linspace(5,150,1000)
 z = np.linspace(0.001,2,800)
 m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 
