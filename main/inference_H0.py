@@ -7,6 +7,7 @@ import os
 from figaro.plot import plot_1d_dist, plot_median_cr
 from figaro import plot_settings
 import sys
+from tqdm import tqdm
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -43,7 +44,6 @@ except:
     model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [jacobian(p_z)(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
 
     from selection_function import selection_function
-    from tqdm import tqdm
     grid = [np.transpose(np.meshgrid(mz, CosmologicalParameters(i/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z))) for i in H0] # shape = (len(H0), len(mz), len(z), 2)
     SE_grid = np.array([selection_function(grid[i]) for i in tqdm(range(len(H0)), desc = 'SE grid')]) # shape = (len(H0), len(mz), len(z))
     model_pdf = np.einsum("ijk, kij -> ijk", model_pdf, SE_grid) # shape = (len(mz), len(z), len(H0))
@@ -67,10 +67,10 @@ figaro_pdf = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, l
 
 print("Infering H0...")
 # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
-jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in range(len(figaro_pdf))])
+jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in tqdm(range(len(figaro_pdf)), desc='JSD')])
 # Find H0 that minimizes JSD for each DPGMM draw
 H0_samples = H0[np.argmin(jsd, axis=1)]
-H0_samples = H0_samples[H0_samples < 140]
+# H0_samples = H0_samples[H0_samples < 140]
 
 print("Saving results...")
 np.savetxt(outdir+"/jsds.txt", jsd)
