@@ -13,12 +13,6 @@ import os
 def p_z(z, H0):
     return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
 
-# Jacobian
-def jacobian(func):
-    def wrapper(z, *args):
-        return func(z, *args)/(1+z)
-    return wrapper
-
 if len(sys.argv) < 4:
     print("Invalid number of arguments!")
     sys.exit(1)
@@ -57,7 +51,7 @@ else:
     sys.exit(1)
 
 def jsd(x, i):
-    model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), jacobian(p_z)(z, x[0])) # shape = (len(mz), len(z))
+    model_pdf = np.einsum("ij, j -> ij", plp(m, x[1:]), p_z(z, x[0])) # shape = (len(mz), len(z))
     grid = np.transpose(np.meshgrid(mz, CosmologicalParameters(x[0]/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z))) # shape = (len(mz), len(z), 2)
     SE_grid = selection_function(grid) # shape = (len(mz), len(z))
     model_pdf = np.einsum("ij, ij -> ij", model_pdf, SE_grid) # shape = (len(mz), len(z))

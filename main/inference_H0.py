@@ -22,12 +22,6 @@ from population_models.mass import plpeak
 def p_z(z, H0):
     return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
 
-# Jacobian
-def jacobian(func):
-    def wrapper(z, *args):
-        return func(z, *args)/(1+z)
-    return wrapper
-
 label = sys.argv[1]
 outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
 
@@ -41,7 +35,7 @@ except:
     m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 
     # model mz pdf for each H0
-    model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [jacobian(p_z)(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
+    model_pdf = np.einsum("ij, kj -> ijk", plpeak(m), [p_z(z, i) for i in H0]) # shape = (len(mz), len(z), len(H0))
 
     from selection_function import selection_function
     grid = [np.transpose(np.meshgrid(mz, CosmologicalParameters(i/100., 0.315, 0.685, -1., 0., 0.).LuminosityDistance(z))) for i in H0] # shape = (len(H0), len(mz), len(z), 2)
