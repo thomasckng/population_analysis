@@ -19,7 +19,7 @@ selfunc.get_opt_params(run_fit)
 n_pts  = np.array([200,200,200])
 
 # Bounds
-dl_bds  = [0.01,15000.]
+dl_bds = [0.01,15000.]
 m1_bds = [0.,500.]
 q_bds  = [0.05, 1.]
 bounds = np.array([m1_bds, q_bds, dl_bds])
@@ -27,7 +27,7 @@ bounds = np.array([m1_bds, q_bds, dl_bds])
 # Arrays
 m1    = np.linspace(m1_bds[0], m1_bds[1], n_pts[0])
 q     = np.linspace(q_bds[0], q_bds[1], n_pts[1])
-dl     = np.linspace(dl_bds[0], dl_bds[1], n_pts[2])
+dl    = np.linspace(dl_bds[0], dl_bds[1], n_pts[2])
 dn_m1 = np.prod(n_pts[1:])
 dn_q  = np.prod(n_pts[2:])
 
