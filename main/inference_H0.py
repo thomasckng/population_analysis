@@ -59,7 +59,7 @@ model_pdf_short = model_pdf[_mask]
 
 figaro_pdf = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, len(mz_short))
 
-print("Infering H0...")
+print("Inferring H0...")
 # Compute JSD between (reconstructed observed distributions for each DPGMM draw) and (model mz distributions for each H0)
 jsd = np.array([scipy_jsd(model_pdf_short, np.full((len(H0), len(mz_short)), figaro_pdf[j]).T) for j in tqdm(range(len(figaro_pdf)), desc='JSD')])
 # Find H0 that minimizes JSD for each DPGMM draw
