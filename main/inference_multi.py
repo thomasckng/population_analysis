@@ -13,15 +13,16 @@ import os
 def p_z(z, H0):
     return CosmologicalParameters(H0/100., 0.315, 0.685, -1., 0., 0.).ComovingVolumeElement(z)/(1+z)
 
-if len(sys.argv) < 4:
+if len(sys.argv) < 5:
     print("Invalid number of arguments!")
     sys.exit(1)
-elif sys.argv[1] == "alpha":
+
+if sys.argv[1] == "2a":
     x0 = [uni(10,200), uni(1.01,5)]
     bounds = ((10,200), (1.01,5))
     def plp(m, x):
         return plpeak(m, alpha=x[0])
-elif sys.argv[1] == "mu":
+elif sys.argv[1] == "2b":
     x0 = [uni(10,200), uni(10,50)]
     bounds = ((10,200), (10,50))
     def plp(m, x):
@@ -31,12 +32,12 @@ elif sys.argv[1] == "4":
     bounds = ((10,200), (10,50), (0.01,10), (0.01,15))
     def plp(m, x):
         return plpeak(m, mu=x[0], sigma=x[1], delta=x[2])
-elif sys.argv[1] == "5":
+elif sys.argv[1] == "5a":
     x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1)]
     bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1))
     def plp(m, x):
         return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2], w=x[3])
-elif sys.argv[1] == "5a":
+elif sys.argv[1] == "5b":
     x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(1,10), uni(0,1)]
     bounds = ((10,200), (1.01,5), (10,50), (1,10), (0,1))
     def plp(m, x):
@@ -95,7 +96,7 @@ else:
     sys.exit(1)
 
 
-n_pool = 32
+n_pool = int(sys.argv[4])
 
 label = sys.argv[3]
 outdir = os.path.dirname(os.path.realpath(__file__)) + "/" + label
