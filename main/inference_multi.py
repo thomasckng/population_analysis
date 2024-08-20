@@ -100,6 +100,9 @@ else:
     print("Invalid argument!")
     sys.exit(1)
 
+def minimize_and_save(i):
+    np.save(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i), minimize(i))
+    return i
 
 n_pool = int(sys.argv[4])
 
@@ -123,34 +126,35 @@ mz_short = mz[_mask]
 
 pdf_figaro = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, len(mz_short))
 
-print("Minimizing JSD...")
-if not os.path.exists(outdir+'/checkpoints'):
-    os.makedirs(outdir+'/checkpoints')
+if not os.path.exists(outdir+'multi/'+sys.argv[1]+'_'+sys.argv[2]+'.npz'):
+    remaining = list(range(len(pdf_figaro)))
+    if not os.path.exists(outdir+'/checkpoints'):
+        os.makedirs(outdir+'/checkpoints')
+    for i in range(len(pdf_figaro)):
+        if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
+            remaining.remove(i)
+            print("Checkpoint found for draw "+str(i)+". Skipping...")
+    print("Remaining draws: "+str(remaining))
 
-remaining = list(range(len(pdf_figaro)))
-for i in range(len(pdf_figaro)):
-    if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
-        remaining.remove(i)
-        print("Checkpoint found for draw "+str(i)+". Skipping...")
-print("Remaining draws: "+str(remaining))
-def minimize_and_save(i):
-    np.save(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i), minimize(i))
-    return i
-with Pool(n_pool) as p:
-    p.map(minimize_and_save, remaining)
+    print("Starting inference...")
+    with Pool(n_pool) as p:
+        p.map(minimize_and_save, remaining)
 
-print("Collecting results...")
-result = []
-for i in range(len(pdf_figaro)):
-    if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
-        result.append(np.load(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'))
-result = np.array(result)
+    print("Collecting results...")
+    result = []
+    for i in range(len(pdf_figaro)):
+        if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
+            result.append(np.load(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'))
+    result = np.array(result)
+
+    print("Saving results...")
+    if not os.path.exists(outdir+'/multi'):
+        os.makedirs(outdir+'/multi')
+    np.savez(outdir+"/multi/"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, pdf_figaro=pdf_figaro)
+
+print("Removing checkpoints...")
 for i in range(len(pdf_figaro)):
     if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
         os.remove(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy')
 
-print("Saving results...")
-if not os.path.exists(outdir+'/multi'):
-    os.makedirs(outdir+'/multi')
-np.savez(outdir+"/multi/"+sys.argv[1]+"_"+sys.argv[2]+".npz", result=result, pdf_figaro=pdf_figaro)
 print("Done!")
