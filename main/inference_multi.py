@@ -27,11 +27,16 @@ elif sys.argv[1] == "2b":
     bounds = ((10,200), (10,50))
     def plp(m, x):
         return plpeak(m, mu=x[0])
-elif sys.argv[1] == "4":
+elif sys.argv[1] == "4a":
     x0 = [uni(10,200), uni(10,50), uni(0.01,10), uni(0.01,15)]
     bounds = ((10,200), (10,50), (0.01,10), (0.01,15))
     def plp(m, x):
         return plpeak(m, mu=x[0], sigma=x[1], delta=x[2])
+elif sys.argv[1] == "4b":
+    x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(0.01,10)]
+    bounds = ((10,200), (1.01,5), (10,50), (0.01,10))
+    def plp(m, x):
+        return plpeak(m, alpha=x[0], mu=x[1], sigma=x[2])
 elif sys.argv[1] == "5a":
     x0 = [uni(10,200), uni(1.01,5), uni(10,50), uni(0.01,10), uni(0,1)]
     bounds = ((10,200), (1.01,5), (10,50), (0.01,10), (0,1))
@@ -119,8 +124,30 @@ mz_short = mz[_mask]
 pdf_figaro = np.array([draw.pdf(mz_short) for draw in draws])# shape (n_draws, len(mz_short))
 
 print("Minimizing JSD...")
+if not os.path.exists(outdir+'/checkpoints'):
+    os.makedirs(outdir+'/checkpoints')
+
+remaining = list(range(len(pdf_figaro)))
+for i in range(len(pdf_figaro)):
+    if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
+        remaining.remove(i)
+        print("Checkpoint found for draw "+str(i)+". Skipping...")
+print("Remaining draws: "+str(remaining))
+def minimize_and_save(i):
+    np.save(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i), minimize(i))
+    return i
 with Pool(n_pool) as p:
-    result = p.map(minimize, range(len(pdf_figaro)))
+    p.map(minimize_and_save, remaining)
+
+print("Collecting results...")
+result = []
+for i in range(len(pdf_figaro)):
+    if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
+        result.append(np.load(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'))
+result = np.array(result)
+for i in range(len(pdf_figaro)):
+    if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
+        os.remove(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy')
 
 print("Saving results...")
 if not os.path.exists(outdir+'/multi'):
