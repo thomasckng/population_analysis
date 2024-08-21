@@ -116,6 +116,7 @@ m = np.einsum("i, j -> ij", mz, np.reciprocal(1+z)) # shape = (len(mz), len(z))
 
 print("Reading bounds and draws...")
 draws = load_density(outdir+"/draws/draws_observed_"+label+".json")
+draws = draws[:1000] # downsample for testing
 
 jsd_bounds = np.loadtxt(outdir+"/jsd_bounds.txt")
 
@@ -133,8 +134,7 @@ if not os.path.exists(outdir+'multi/'+sys.argv[1]+'_'+sys.argv[2]+'.npz'):
     for i in range(len(pdf_figaro)):
         if os.path.exists(outdir+'/checkpoints/'+sys.argv[1]+'_'+sys.argv[2]+'_'+str(i)+'.npy'):
             remaining.remove(i)
-            print("Checkpoint found for draw "+str(i)+". Skipping...")
-    print("Remaining draws: "+str(remaining))
+    print("Remaining number of draws: "+str(len(remaining)))
 
     print("Starting inference...")
     with Pool(n_pool) as p:
